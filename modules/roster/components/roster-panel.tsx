@@ -1,5 +1,6 @@
 'use client';
 
+import { ErrorNotice } from '@/components/admin/error-notice';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -42,14 +43,7 @@ export function RosterPanel() {
                 </p>
             </div>
 
-            {(listError || error) && (
-                <p
-                    className="rounded-md border border-(--color-border) bg-(--color-surface) px-3 py-2 text-sm text-(--color-danger)"
-                    role="alert"
-                >
-                    {error ?? listError}
-                </p>
-            )}
+            <ErrorNotice message={error ?? listError} />
 
             {active.length === 0 ? (
                 <p className="text-sm text-(--color-fg-muted)">No active members yet. Accepted invites appear here.</p>

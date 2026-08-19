@@ -19,14 +19,6 @@ export function planCapabilityLabel(capability: PlanCapability | null): string {
     }
 }
 
-export function formatPlanPrice(price: number): string {
-    return new Intl.NumberFormat('en-IN', {
-        style: 'currency',
-        currency: 'INR',
-        maximumFractionDigits: 0,
-    }).format(price);
-}
-
 export function formatPlanDuration(days: number): string {
     if (days === 30) {
         return '30 days';

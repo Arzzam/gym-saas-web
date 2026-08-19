@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
 
+import { ErrorNotice } from '@/components/admin/error-notice';
 import { MetricStrip, type Metric } from '@/components/admin/metric-strip';
 import { WorkQueue, WorkQueueLayout, WorkQueueRow } from '@/components/admin/work-queue-layout';
 import { Badge } from '@/components/ui/badge';
@@ -75,14 +76,7 @@ export function LeadsAdminPanel({ gymName, statusFilter, today }: LeadsAdminPane
 
     return (
         <div className="space-y-4">
-            {message ? (
-                <p
-                    className="rounded-(--radius-control) border border-(--color-border) bg-(--color-surface) px-3 py-2 text-sm text-(--color-danger)"
-                    role="alert"
-                >
-                    {message}
-                </p>
-            ) : null}
+            <ErrorNotice message={message} />
 
             <WorkQueueLayout
                 selectedKey={selected?.lead.id ?? null}

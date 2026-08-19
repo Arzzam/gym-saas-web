@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type SubmitEvent } from 'react';
+import { ErrorNotice } from '@/components/admin/error-notice';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -83,14 +84,7 @@ export function MembersAdminPanel() {
 
     return (
         <div className="space-y-6">
-            {(listError || error) && (
-                <p
-                    className="rounded-md border border-(--color-border) bg-(--color-surface) px-3 py-2 text-sm text-(--color-danger)"
-                    role="alert"
-                >
-                    {error ?? listError}
-                </p>
-            )}
+            <ErrorNotice message={error ?? listError} />
 
             <section className="rounded-(--radius-panel) border border-(--color-border) bg-(--color-surface) p-4 shadow-(--shadow-panel) md:p-6">
                 <h2 className="text-sm font-semibold text-(--color-fg)">Invite member</h2>

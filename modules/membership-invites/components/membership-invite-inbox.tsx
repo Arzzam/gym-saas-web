@@ -113,7 +113,7 @@ export function MembershipInviteInbox() {
                     {pending.map((invite) => (
                         <li
                             key={invite.id}
-                            className="space-y-4 rounded-md border border-(--color-border)/80 px-4 py-4"
+                            className="space-y-4 rounded-(--radius-control) border border-(--color-border)/80 px-4 py-4"
                         >
                             <div className="space-y-1">
                                 <p className="text-sm font-medium text-(--color-fg)">

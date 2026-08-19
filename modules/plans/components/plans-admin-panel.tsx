@@ -5,7 +5,8 @@ import { useState, type SubmitEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { formatPlanDuration, formatPlanPrice, planCapabilityLabel, planKindLabel } from '@/modules/plans/plans-labels';
+import { formatMoney } from '@/lib/ui/format-money';
+import { formatPlanDuration, planCapabilityLabel, planKindLabel } from '@/modules/plans/plans-labels';
 import { useCreatePlan, useDeletePlan, usePlans, useSetPlanActive } from '@/modules/plans/plans-hooks';
 import type { MembershipPlan, PlanKind } from '@/modules/plans/plans-ports';
 
@@ -174,7 +175,7 @@ export function PlansAdminPanel({ gymName, kindFilter }: PlansAdminPanelProps) {
                                         </span>
                                     </p>
                                     <p className="text-xs text-(--color-fg-muted)">
-                                        {formatPlanPrice(plan.price)} · {formatPlanDuration(plan.durationDays)}
+                                        {formatMoney(plan.price)} · {formatPlanDuration(plan.durationDays)}
                                         {plan.kind === 'ADDON' ? ` · ${planCapabilityLabel(plan.capability)}` : ''}
                                         {plan.active ? '' : ' · Inactive'}
                                     </p>

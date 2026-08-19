@@ -4,9 +4,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition, type SubmitEvent } from 'react';
 
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { cn } from '@/lib/utils';
 import { completeGoogleAction } from '@/modules/auth/auth-actions';
 import {
     clearGoogleOAuthPending,
@@ -176,10 +177,9 @@ export function GoogleOAuthCallbackClient() {
                     <Button type="submit" className="w-full" disabled={!lane || isPending}>
                         {isPending ? 'Signing in…' : 'Continue'}
                     </Button>
-                    <Link
-                        href="/login"
-                        className="inline-flex w-full items-center justify-center rounded-md px-3 py-2 text-sm font-medium text-(--color-fg-muted) hover:text-(--color-fg)"
-                    >
+                    {/* Styled from the same variants as the <Button> above, so
+                        the two controls in this stack cannot drift apart. */}
+                    <Link href="/login" className={cn(buttonVariants({ variant: 'ghost' }), 'w-full')}>
                         Back to sign in
                     </Link>
                 </div>
@@ -194,10 +194,7 @@ export function GoogleOAuthCallbackClient() {
                 <p className="text-sm text-(--color-danger)" role="alert">
                     {error ?? 'Something went wrong. Please try again.'}
                 </p>
-                <Link
-                    href="/login"
-                    className="inline-flex w-full items-center justify-center rounded-md bg-(--color-accent) px-3 py-2 text-sm font-medium text-(--color-accent-fg) hover:opacity-90"
-                >
+                <Link href="/login" className={cn(buttonVariants(), 'w-full')}>
                     Back to sign in
                 </Link>
             </div>

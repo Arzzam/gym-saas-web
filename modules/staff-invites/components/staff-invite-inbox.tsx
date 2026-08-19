@@ -76,7 +76,7 @@ export function StaffInviteInbox({ invites, listError, staffCode }: StaffInviteI
             ) : null}
 
             {actionable.length > 0 ? (
-                <ul className="divide-y divide-(--color-border)/70 rounded-md border border-(--color-border)/80">
+                <ul className="divide-y divide-(--color-border)/70 rounded-(--radius-panel) border border-(--color-border)/80">
                     {actionable.map((invite) => (
                         <li
                             key={invite.id}

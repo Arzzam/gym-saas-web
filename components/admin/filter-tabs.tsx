@@ -32,7 +32,7 @@ export function FilterTabs({ tabs, activeValue, label }: FilterTabsProps) {
                         key={tab.value}
                         href={tab.href}
                         aria-current={active ? 'page' : undefined}
-                        className={`rounded-md px-3 py-1.5 text-sm font-medium ${
+                        className={`rounded-(--radius-control) px-3 py-1.5 text-sm font-medium ${
                             active
                                 ? 'bg-(--color-accent) text-(--color-accent-fg)'
                                 : 'border border-(--color-border) text-(--color-fg-muted) hover:text-(--color-fg)'

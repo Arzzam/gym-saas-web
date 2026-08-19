@@ -47,7 +47,7 @@ export default function AdminDashboardPage() {
                         <Link
                             key={item.href}
                             href={item.href}
-                            className="rounded-2xl border border-(--color-border) bg-(--color-canvas)/50 p-4 transition hover:border-(--color-fg)/20 hover:bg-(--color-canvas)"
+                            className="rounded-(--radius-panel) border border-(--color-border) bg-(--color-canvas)/50 p-4 transition hover:border-(--color-fg)/20 hover:bg-(--color-canvas)"
                         >
                             <p className="text-sm font-medium text-(--color-fg)">{item.title}</p>
                             <p className="mt-1 text-xs leading-relaxed text-(--color-fg-muted)">{item.description}</p>
