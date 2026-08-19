@@ -1,401 +1,162 @@
 'use client';
 
-import { useState, type SubmitEvent } from 'react';
+import { useMemo, useState } from 'react';
+import { Search } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
+import { MetricStrip, type Metric } from '@/components/admin/metric-strip';
+import { WorkQueue, WorkQueueLayout, WorkQueueRow } from '@/components/admin/work-queue-layout';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { formatLeadFollowUp, LEAD_STATUSES, leadStatusLabel } from '@/modules/leads/leads-labels';
+import { statusToneBadgeVariant } from '@/lib/ui/status-tone';
+import { cn } from '@/lib/utils';
+import { LeadCaptureDialog } from '@/modules/leads/components/lead-capture-dialog';
+import { LeadDetailRail } from '@/modules/leads/components/lead-detail-rail';
 import {
-    useChangeLeadStatus,
-    useCreateLead,
-    useDeleteLead,
-    useLeadsPage,
-    useUpdateLead,
-} from '@/modules/leads/leads-hooks';
-import type { Lead, LeadStatus } from '@/modules/leads/leads-ports';
+    buildLeadRows,
+    filterLeadRows,
+    followUpUrgencyTone,
+    summarizeLeads,
+    type LeadRow,
+} from '@/modules/leads/leads-desk';
+import { useChangeLeadStatus, useDeleteLead, useLeadsPage } from '@/modules/leads/leads-hooks';
+import { isLeadStageMuted, leadStatusLabel, leadStatusTone } from '@/modules/leads/leads-labels';
+import type { LeadStatus } from '@/modules/leads/leads-ports';
 
 type LeadsAdminPanelProps = {
     gymName: string;
     statusFilter: LeadStatus | 'ALL';
+    /**
+     * Resolved on the server so "follow up in 3 days" is computed from one
+     * clock — otherwise SSR and hydration can straddle UTC midnight.
+     */
+    today: string;
 };
 
-export function LeadsAdminPanel({ gymName, statusFilter }: LeadsAdminPanelProps) {
-    const [name, setName] = useState('');
-    const [phone, setPhone] = useState('');
-    const [source, setSource] = useState('walk-in');
-    const [interest, setInterest] = useState('trial');
-    const [notes, setNotes] = useState('');
-
+export function LeadsAdminPanel({ gymName, statusFilter, today }: LeadsAdminPanelProps) {
     // Hydrated from the page's server prefetch — same query key (ADR-0011).
     const { data, error: listQueryError } = useLeadsPage(statusFilter);
-    const leads = data?.leads ?? [];
-    const dueFollowUps = data?.dueFollowUps ?? [];
 
-    const createLead = useCreateLead();
-
-    // Status change and delete are owned *here*, not in LeadEditRow: an
-    // optimistic delete unmounts the row, which would destroy a mutation hook
-    // living inside it — taking the failure message with it. Held in the
-    // parent, the mutation (and its error) outlives the row's remount.
+    // Status change and delete are owned *here*, not in the rail: an optimistic
+    // delete unmounts the rail, which would destroy a mutation hook living
+    // inside it — taking the failure message with it.
     const changeStatus = useChangeLeadStatus(statusFilter);
     const deleteLead = useDeleteLead(statusFilter);
     const rowActionsPending = changeStatus.isPending || deleteLead.isPending;
-    const rowActionError = changeStatus.error?.message ?? deleteLead.error?.message ?? null;
 
-    const isPending = createLead.isPending;
-    const listError = listQueryError?.message ?? null;
-    const error = createLead.error?.message ?? null;
-    const warning = createLead.data?.ok ? (createLead.data.warning ?? null) : null;
+    const [query, setQuery] = useState('');
+    const [selectedId, setSelectedId] = useState<string | null>(null);
 
-    function handleCreate(event: SubmitEvent<HTMLFormElement>) {
-        event.preventDefault();
-        createLead.mutate(
-            { name, phone, source, interest, notes: notes || undefined },
-            {
-                onSuccess: () => {
-                    setName('');
-                    setPhone('');
-                    setNotes('');
-                },
-            },
-        );
-    }
+    const followUpsDue = data?.dueFollowUps.length ?? 0;
+    const rows = useMemo(() => buildLeadRows(data?.leads ?? [], today), [data?.leads, today]);
+    const visible = useMemo(() => filterLeadRows(rows, query), [rows, query]);
+    const summary = useMemo(() => summarizeLeads(rows), [rows]);
+
+    // Derived, not stored: a search that hides the selected lead falls back to
+    // the top of the queue instead of leaving a stale rail behind.
+    const selected: LeadRow | null = visible.find((row) => row.lead.id === selectedId) ?? visible[0] ?? null;
+
+    const metrics: Metric[] = [
+        { label: 'Leads', value: String(summary.total), hint: gymName },
+        {
+            label: 'Follow-ups due',
+            // From the API's own due-follow-ups list, not counted off the rows:
+            // it is gym-wide, so the number does not change when the Admin
+            // switches stage tabs.
+            value: String(followUpsDue),
+            // Owed calls need attention; nothing here denies anyone access.
+            tone: followUpsDue > 0 ? 'warning' : 'neutral',
+            hint: followUpsDue > 0 ? 'across all stages' : 'nothing owed',
+        },
+        { label: 'In trial', value: String(summary.inTrial) },
+        { label: 'Converted', value: String(summary.converted), tone: summary.converted > 0 ? 'positive' : undefined },
+    ];
+
+    const message = listQueryError?.message ?? changeStatus.error?.message ?? deleteLead.error?.message ?? null;
 
     return (
-        <div className="space-y-6">
-            {dueFollowUps.length > 0 ? (
-                <section
-                    className="rounded-(--radius-panel) border border-(--color-border) bg-(--color-surface) p-5 shadow-(--shadow-panel)"
-                    aria-labelledby="due-followups-heading"
+        <div className="space-y-4">
+            {message ? (
+                <p
+                    className="rounded-(--radius-control) border border-(--color-border) bg-(--color-surface) px-3 py-2 text-sm text-(--color-danger)"
+                    role="alert"
                 >
-                    <h2 id="due-followups-heading" className="text-sm font-medium text-(--color-fg)">
-                        Due follow-ups ({dueFollowUps.length})
-                    </h2>
-                    <ul className="mt-3 space-y-2">
-                        {dueFollowUps.map((lead) => (
-                            <li key={`due-${lead.id}`} className="text-sm text-(--color-fg-muted)">
-                                <span className="font-medium text-(--color-fg)">{lead.name}</span> · {lead.phone} ·{' '}
-                                {formatLeadFollowUp(lead.followUpDate)}
-                            </li>
-                        ))}
-                    </ul>
-                </section>
+                    {message}
+                </p>
             ) : null}
 
-            <form
-                onSubmit={handleCreate}
-                className="space-y-4 rounded-(--radius-panel) border border-(--color-border) bg-(--color-surface) p-5 shadow-(--shadow-panel)"
-            >
-                <h2 className="text-sm font-medium text-(--color-fg)">Capture lead</h2>
-                <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                        <label htmlFor="lead-name" className="block text-sm font-medium text-(--color-fg)">
-                            Name
-                        </label>
-                        <Input
-                            id="lead-name"
-                            required
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className="mt-1"
-                            placeholder="Walk-in Prospect"
-                        />
-                    </div>
-                    <div>
-                        <label htmlFor="lead-phone" className="block text-sm font-medium text-(--color-fg)">
-                            Phone
-                        </label>
-                        <Input
-                            id="lead-phone"
-                            required
-                            inputMode="tel"
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                            className="mt-1"
-                            placeholder="9876543210"
-                        />
-                    </div>
-                    <div>
-                        <label htmlFor="lead-source" className="block text-sm font-medium text-(--color-fg)">
-                            Source
-                        </label>
-                        <Input
-                            id="lead-source"
-                            value={source}
-                            onChange={(e) => setSource(e.target.value)}
-                            className="mt-1"
-                            placeholder="walk-in"
-                        />
-                    </div>
-                    <div>
-                        <label htmlFor="lead-interest" className="block text-sm font-medium text-(--color-fg)">
-                            Interest
-                        </label>
-                        <Input
-                            id="lead-interest"
-                            value={interest}
-                            onChange={(e) => setInterest(e.target.value)}
-                            className="mt-1"
-                            placeholder="trial"
-                        />
-                    </div>
-                    <div className="sm:col-span-2">
-                        <label htmlFor="lead-notes" className="block text-sm font-medium text-(--color-fg)">
-                            Notes <span className="font-normal text-(--color-fg-muted)">(optional)</span>
-                        </label>
-                        <Textarea
-                            id="lead-notes"
-                            rows={2}
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
-                            className="mt-1"
-                            placeholder="Asked about evening batch"
-                        />
-                    </div>
-                </div>
-                {error ? (
-                    <p role="alert" className="text-sm text-(--color-danger)">
-                        {error}
-                    </p>
-                ) : null}
-                {warning ? (
-                    <p className="text-sm text-(--color-fg-muted)" role="status">
-                        {warning}
-                    </p>
-                ) : null}
-                <Button type="submit" disabled={isPending}>
-                    {isPending ? 'Saving…' : 'Create lead'}
-                </Button>
-            </form>
-
-            <div className="rounded-(--radius-panel) border border-(--color-border) bg-(--color-surface) shadow-(--shadow-panel)">
-                <div className="border-b border-(--color-border)/80 px-5 py-3">
-                    <h2 className="text-sm font-medium text-(--color-fg)">Pipeline for {gymName}</h2>
-                </div>
-                {rowActionError ? (
-                    <p role="alert" className="px-5 pt-4 text-sm text-(--color-danger)">
-                        {rowActionError}
-                    </p>
-                ) : null}
-                {listError ? (
-                    <p role="alert" className="px-5 py-4 text-sm text-(--color-danger)">
-                        {listError}
-                    </p>
-                ) : leads.length === 0 ? (
-                    <p className="px-5 py-6 text-sm text-(--color-fg-muted)">
-                        No leads yet. Capture a walk-in with the form above.
-                    </p>
-                ) : (
-                    <ul className="divide-y divide-(--color-border)/70">
-                        {leads.map((lead) => (
-                            <LeadEditRow
-                                key={lead.id}
-                                lead={lead}
-                                onStatusChange={(leadId, status) => changeStatus.mutate({ leadId, status })}
-                                onDelete={(leadId) => deleteLead.mutate({ leadId })}
-                                rowActionsPending={rowActionsPending}
+            <WorkQueueLayout
+                selectedKey={selected?.lead.id ?? null}
+                railLabel="Selected lead"
+                summary={<MetricStrip metrics={metrics} label="Pipeline summary" />}
+                toolbar={
+                    <div className="flex flex-wrap items-center gap-2">
+                        <div className="relative min-w-48 flex-1">
+                            <Search
+                                aria-hidden
+                                className="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-(--color-fg-muted)"
                             />
-                        ))}
-                    </ul>
-                )}
-            </div>
+                            <Input
+                                type="search"
+                                className="pl-8"
+                                placeholder="Search name, phone, source or interest"
+                                aria-label="Search leads"
+                                value={query}
+                                onChange={(event) => setQuery(event.target.value)}
+                            />
+                        </div>
+                        <LeadCaptureDialog />
+                    </div>
+                }
+                queue={
+                    visible.length === 0 ? (
+                        <div className="rounded-(--radius-panel) border border-(--color-border)/80 bg-(--color-surface) p-8 text-center shadow-(--shadow-panel)">
+                            <p className="text-sm font-medium text-(--color-fg)">
+                                {rows.length === 0 ? 'No leads yet' : 'No leads match this search'}
+                            </p>
+                            <p className="mt-1 text-sm text-(--color-fg-muted)">
+                                {rows.length === 0
+                                    ? 'Capture a walk-in with the button above.'
+                                    : 'Clear the search, or switch the stage filter.'}
+                            </p>
+                        </div>
+                    ) : (
+                        <WorkQueue label="Lead pipeline">
+                            {visible.map((row) => (
+                                <WorkQueueRow
+                                    key={row.lead.id}
+                                    tone={followUpUrgencyTone(row.urgency)}
+                                    selected={row.lead.id === selected?.lead.id}
+                                    onSelect={() => setSelectedId(row.lead.id)}
+                                    selectLabel={`Open ${row.lead.name}`}
+                                    title={row.lead.name}
+                                    meta={
+                                        <>
+                                            {row.lead.phone} · {row.followUpLabel}
+                                            {row.lead.interest ? ` · ${row.lead.interest}` : ''}
+                                        </>
+                                    }
+                                    trailing={
+                                        <Badge
+                                            variant={statusToneBadgeVariant(leadStatusTone(row.lead.status))}
+                                            className={cn(isLeadStageMuted(row.lead.status) && 'opacity-60')}
+                                        >
+                                            {leadStatusLabel(row.lead.status)}
+                                        </Badge>
+                                    }
+                                />
+                            ))}
+                        </WorkQueue>
+                    )
+                }
+                rail={
+                    <LeadDetailRail
+                        row={selected}
+                        onStatusChange={(leadId, status) => changeStatus.mutate({ leadId, status })}
+                        onDelete={(leadId) => deleteLead.mutate({ leadId })}
+                        rowActionsPending={rowActionsPending}
+                    />
+                }
+            />
         </div>
-    );
-}
-
-type LeadEditRowProps = {
-    lead: Lead;
-    /** Owned by the parent — see the note on `rowActionError` there. */
-    onStatusChange: (leadId: string, status: LeadStatus) => void;
-    onDelete: (leadId: string) => void;
-    rowActionsPending: boolean;
-};
-
-function LeadEditRow({ lead, onStatusChange, onDelete, rowActionsPending }: LeadEditRowProps) {
-    const [name, setName] = useState(lead.name);
-    const [phone, setPhone] = useState(lead.phone);
-    const [source, setSource] = useState(lead.source ?? '');
-    const [interest, setInterest] = useState(lead.interest ?? '');
-    const [notes, setNotes] = useState(lead.notes ?? '');
-    const [followUpDate, setFollowUpDate] = useState(lead.followUpDate ?? '');
-
-    // Save is safe to own here: it never removes the row, so this component
-    // (and its mutation state) stays mounted through the round trip.
-    const updateLead = useUpdateLead();
-    const isPending = rowActionsPending || updateLead.isPending;
-    const error = updateLead.error?.message ?? null;
-    const warning = updateLead.data?.ok ? (updateLead.data.warning ?? null) : null;
-
-    function handleSave(event: SubmitEvent<HTMLFormElement>) {
-        event.preventDefault();
-        updateLead.mutate({
-            leadId: lead.id,
-            name,
-            phone,
-            source,
-            interest,
-            notes,
-            followUpDate: followUpDate || null,
-        });
-    }
-
-    function handleStatus(status: LeadStatus) {
-        onStatusChange(lead.id, status);
-    }
-
-    function handleDelete() {
-        onDelete(lead.id);
-    }
-
-    return (
-        <li className="space-y-4 px-5 py-4">
-            <form onSubmit={handleSave} className="space-y-4">
-                <div className="grid gap-3 sm:grid-cols-2">
-                    <div>
-                        <label
-                            htmlFor={`edit-name-${lead.id}`}
-                            className="block text-xs font-medium text-(--color-fg-muted)"
-                        >
-                            Name
-                        </label>
-                        <Input
-                            id={`edit-name-${lead.id}`}
-                            required
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            disabled={isPending}
-                            className="mt-1"
-                        />
-                    </div>
-                    <div>
-                        <label
-                            htmlFor={`edit-phone-${lead.id}`}
-                            className="block text-xs font-medium text-(--color-fg-muted)"
-                        >
-                            Phone
-                        </label>
-                        <Input
-                            id={`edit-phone-${lead.id}`}
-                            required
-                            inputMode="tel"
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                            disabled={isPending}
-                            className="mt-1"
-                        />
-                    </div>
-                    <div>
-                        <label
-                            htmlFor={`edit-source-${lead.id}`}
-                            className="block text-xs font-medium text-(--color-fg-muted)"
-                        >
-                            Source
-                        </label>
-                        <Input
-                            id={`edit-source-${lead.id}`}
-                            value={source}
-                            onChange={(e) => setSource(e.target.value)}
-                            disabled={isPending}
-                            placeholder="walk-in"
-                            className="mt-1"
-                        />
-                    </div>
-                    <div>
-                        <label
-                            htmlFor={`edit-interest-${lead.id}`}
-                            className="block text-xs font-medium text-(--color-fg-muted)"
-                        >
-                            Interest
-                        </label>
-                        <Input
-                            id={`edit-interest-${lead.id}`}
-                            value={interest}
-                            onChange={(e) => setInterest(e.target.value)}
-                            disabled={isPending}
-                            placeholder="trial"
-                            className="mt-1"
-                        />
-                    </div>
-                    <div className="sm:col-span-2">
-                        <label
-                            htmlFor={`edit-notes-${lead.id}`}
-                            className="block text-xs font-medium text-(--color-fg-muted)"
-                        >
-                            Notes
-                        </label>
-                        <Textarea
-                            id={`edit-notes-${lead.id}`}
-                            rows={2}
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
-                            disabled={isPending}
-                            className="mt-1"
-                        />
-                    </div>
-                    <div>
-                        <label
-                            htmlFor={`edit-followup-${lead.id}`}
-                            className="block text-xs font-medium text-(--color-fg-muted)"
-                        >
-                            Follow-up date
-                        </label>
-                        <Input
-                            id={`edit-followup-${lead.id}`}
-                            type="date"
-                            value={followUpDate}
-                            onChange={(e) => setFollowUpDate(e.target.value)}
-                            disabled={isPending}
-                            className="mt-1"
-                        />
-                    </div>
-                    <div>
-                        <label
-                            htmlFor={`edit-status-${lead.id}`}
-                            className="block text-xs font-medium text-(--color-fg-muted)"
-                        >
-                            Status
-                        </label>
-                        <Select
-                            value={lead.status}
-                            disabled={isPending}
-                            onValueChange={(value) => handleStatus(value as LeadStatus)}
-                        >
-                            <SelectTrigger id={`edit-status-${lead.id}`} className="mt-1 w-full">
-                                <SelectValue>{(value: LeadStatus) => leadStatusLabel(value)}</SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                                {LEAD_STATUSES.map((status) => (
-                                    <SelectItem key={status} value={status}>
-                                        {leadStatusLabel(status)}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-
-                {error ? (
-                    <p role="alert" className="text-sm text-(--color-danger)">
-                        {error}
-                    </p>
-                ) : null}
-                {warning ? (
-                    <p className="text-sm text-(--color-fg-muted)" role="status">
-                        {warning}
-                    </p>
-                ) : null}
-
-                <div className="flex flex-wrap gap-2">
-                    <Button type="submit" disabled={isPending}>
-                        {isPending ? 'Saving…' : 'Save changes'}
-                    </Button>
-                    <Button type="button" variant="ghost" disabled={isPending} onClick={handleDelete}>
-                        Delete
-                    </Button>
-                </div>
-            </form>
-        </li>
     );
 }

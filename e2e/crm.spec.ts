@@ -1,33 +1,81 @@
 import { expect, test } from './fixtures/pages.fixture';
 
-test.describe('CRM leads', () => {
-    test('Admin can capture a lead, change its status, and delete it', async ({ staffAdmin, crmPage, page }) => {
+/**
+ * The fixture store is shared by every Playwright worker
+ * (`lib/api/e2e/store.ts`), so the capture/delete round trip below uses a
+ * test-only name and cleans up after itself, and nothing here asserts an
+ * absolute row count.
+ */
+test.describe('CRM desk', () => {
+    test('the pipeline reads as a call list', async ({ staffAdmin, crmPage, page }) => {
         await staffAdmin.moduleLink('Leads').click();
         await expect(page).toHaveURL(/\/admin\/crm/);
         await expect(crmPage.heading).toBeVisible();
-        await expect(crmPage.pipelineHeading).toBeVisible();
 
-        // Uses a test-only name/phone so this never touches the seeded
-        // "Walk-in Prospect" lead other runs may assert on.
+        // The seeded lead's follow-up is in the past, so it is chased first.
+        const prospect = crmPage.row('Walk-in Prospect');
+        await expect(prospect).toBeVisible();
+        await expect(prospect).toContainText('overdue');
+        await expect(prospect.getByText('New', { exact: true })).toBeVisible();
+    });
+
+    test('selecting a lead opens their details and a way to call them', async ({ staffAdmin, crmPage }) => {
+        await staffAdmin.moduleLink('Leads').click();
+        await crmPage.selectRow('Walk-in Prospect');
+
+        await expect(crmPage.rail).toContainText('Walk-in Prospect');
+        await expect(crmPage.rail.getByRole('link', { name: 'Call' })).toHaveAttribute('href', 'tel:9876543210');
+        await expect(crmPage.rail.getByRole('link', { name: 'WhatsApp' })).toHaveAttribute(
+            'href',
+            'https://wa.me/9876543210',
+        );
+        // The edit form lives in the rail now — one form, not one per row.
+        await expect(crmPage.rail.getByLabel('Notes', { exact: true })).toBeVisible();
+    });
+
+    test('search narrows the pipeline', async ({ staffAdmin, crmPage }) => {
+        await staffAdmin.moduleLink('Leads').click();
+
+        await crmPage.search.fill('walk-in');
+        await expect(crmPage.row('Walk-in Prospect')).toBeVisible();
+
+        await crmPage.search.fill('nobody-by-this-name');
+        await expect(crmPage.rows).toHaveCount(0);
+        await expect(crmPage.page.getByText('No leads match this search')).toBeVisible();
+    });
+
+    test('Admin can capture a lead, move its stage, and delete it', async ({ staffAdmin, crmPage }) => {
+        await staffAdmin.moduleLink('Leads').click();
+
         const name = 'E2E Capture Lead';
-        const rowCountBefore = await crmPage.pipelineRows.count();
         await crmPage.captureLead(name, '9998887770');
+        await expect(crmPage.row(name)).toBeVisible();
 
-        // `newestRow` is a positional (first-row) locator, re-resolved on
-        // every query — it's pinned to our lead only as long as nothing
-        // reorders the list, which holds for the rest of this test (status
-        // changes and deletes don't reorder).
-        const row = crmPage.newestRow;
-        await expect(crmPage.rowNameInput(row)).toHaveValue(name);
+        await crmPage.selectRow(name);
+        await expect(crmPage.rail).toContainText(name);
 
-        // Status change reflects immediately (useOptimistic) — no page
-        // reload needed for the Select trigger to show the new label.
-        await crmPage.setStatus(row, 'Contacted');
-        await expect(row.getByRole('combobox')).toContainText('Contacted');
+        // Stage change reflects immediately — optimistic, no reload.
+        await crmPage.setStage(name, 'Contacted');
+        await expect(crmPage.row(name).getByText('Contacted', { exact: true })).toBeVisible();
 
-        // Delete removes the row immediately (useOptimistic) rather than
-        // waiting on a full-page refresh.
-        await crmPage.deleteButton(row).click();
-        await expect(crmPage.pipelineRows).toHaveCount(rowCountBefore);
+        // Delete removes the row optimistically and leaves the rail on the
+        // next lead rather than on a ghost.
+        await crmPage.deleteButton.click();
+        await expect(crmPage.row(name)).toHaveCount(0);
+        await expect(crmPage.rail).not.toContainText(name);
+    });
+
+    test('capture is a dialog, so the pipeline stays on screen', async ({ staffAdmin, crmPage, page }) => {
+        await staffAdmin.moduleLink('Leads').click();
+
+        await expect(crmPage.queue).toBeVisible();
+        await crmPage.captureTrigger.click();
+
+        const dialog = page.getByRole('dialog');
+        await expect(dialog.getByLabel('Name', { exact: true })).toBeVisible();
+
+        await dialog.getByRole('button', { name: 'Cancel' }).click();
+        await expect(dialog).toHaveCount(0);
+        await expect(crmPage.queue).toBeVisible();
     });
 });

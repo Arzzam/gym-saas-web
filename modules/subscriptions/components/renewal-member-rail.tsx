@@ -1,9 +1,7 @@
 'use client';
 
-import { Mail, MessageCircle, Phone } from 'lucide-react';
-
 import { Badge } from '@/components/ui/badge';
-import { buttonVariants } from '@/components/ui/button';
+import { ContactActions } from '@/components/admin/contact-actions';
 import { WorkQueueRailPanel, WorkQueueRailSection } from '@/components/admin/work-queue-layout';
 import { cn } from '@/lib/utils';
 import { formatMoney } from '@/lib/ui/format-money';
@@ -12,7 +10,6 @@ import {
     membershipPaymentStatusLabel,
     membershipPaymentStatusTone,
 } from '@/modules/membership-invites/membership-invites-labels';
-import type { RosterMember } from '@/modules/roster/roster-ports';
 import type { RenewalRow } from '@/modules/subscriptions/subscriptions-desk';
 import { useClientSubscriptions } from '@/modules/subscriptions/subscriptions-hooks';
 import { formatRenewalDue, subscriptionKindLabel } from '@/modules/subscriptions/subscriptions-labels';
@@ -27,41 +24,6 @@ import type { Subscription } from '@/modules/subscriptions/subscriptions-ports';
  * (`000-project-context.mdc`) — a renewals screen is exactly the kind of place
  * that would casually leak them, so there is nothing here to leak.
  */
-
-/** `wa.me` wants digits only, no `+` and no spacing. */
-function whatsappHref(phone: string): string {
-    return `https://wa.me/${phone.replace(/\D/g, '')}`;
-}
-
-const contactLinkClass = cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'flex-1 justify-center');
-
-function ContactActions({ member }: { member: RosterMember }) {
-    return (
-        <div className="flex flex-wrap gap-2">
-            {member.clientPhone ? (
-                <>
-                    <a className={contactLinkClass} href={`tel:${member.clientPhone}`}>
-                        <Phone aria-hidden />
-                        Call
-                    </a>
-                    <a
-                        className={contactLinkClass}
-                        href={whatsappHref(member.clientPhone)}
-                        target="_blank"
-                        rel="noreferrer noopener"
-                    >
-                        <MessageCircle aria-hidden />
-                        WhatsApp
-                    </a>
-                </>
-            ) : null}
-            <a className={contactLinkClass} href={`mailto:${member.clientEmail}`}>
-                <Mail aria-hidden />
-                Email
-            </a>
-        </div>
-    );
-}
 
 /**
  * A label/value pair in the rail. `money` is not decoration: it turns on
@@ -142,7 +104,7 @@ export function RenewalMemberRail({ row }: { row: RenewalRow | null }) {
                 )}
             </div>
 
-            {member ? <ContactActions member={member} /> : null}
+            <ContactActions phone={member?.clientPhone} email={member?.clientEmail} />
 
             <WorkQueueRailSection title="This renewal">
                 <div className="space-y-1">
