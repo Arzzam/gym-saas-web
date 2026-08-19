@@ -1,3 +1,5 @@
+import { describePlan } from '@/modules/plans/plans-labels';
+import type { MembershipPlan } from '@/modules/plans/plans-ports';
 import type { RosterMember } from '@/modules/roster/roster-ports';
 import type { RenewalDueItem, SubscriptionPaymentStatus } from '@/modules/subscriptions/subscriptions-ports';
 import {
@@ -87,6 +89,10 @@ export type RenewalRow = {
     /** `null` when the client is no longer on the ACTIVE roster — say so, don't invent a name. */
     member: RosterMember | null;
     displayName: string;
+    /** `null` when the plan behind this line has since been deleted from the catalog. */
+    plan: MembershipPlan | null;
+    /** "Quarterly Membership · 90 days", or just the kind when the plan is gone. */
+    planLabel: string;
     urgency: RenewalUrgency;
     dueLabel: string;
     outstanding: number;
@@ -97,19 +103,34 @@ function displayNameFor(member: RosterMember | null, clientUserId: string): stri
     return member?.clientName ?? `Member ${clientUserId.slice(0, 8)}`;
 }
 
-export function buildRenewalRows(
-    renewals: readonly RenewalDueItem[],
-    members: readonly RosterMember[],
-    today: string = isoToday(),
-): RenewalRow[] {
+/**
+ * Named rather than positional: this row is a join of three lists plus a
+ * clock, and a fourth positional argument with a default in the middle is how
+ * a caller silently passes `today` into `plans`.
+ */
+export function buildRenewalRows({
+    renewals,
+    members,
+    plans = [],
+    today = isoToday(),
+}: {
+    renewals: readonly RenewalDueItem[];
+    members: readonly RosterMember[];
+    plans?: readonly MembershipPlan[];
+    today?: string;
+}): RenewalRow[] {
     const byClientId = new Map(members.map((member) => [member.clientUserId, member]));
+    const byPlanId = new Map(plans.map((plan) => [plan.id, plan]));
     return renewals
         .map((renewal) => {
             const member = byClientId.get(renewal.clientUserId) ?? null;
+            const plan = byPlanId.get(renewal.planId) ?? null;
             return {
                 renewal,
                 member,
                 displayName: displayNameFor(member, renewal.clientUserId),
+                plan,
+                planLabel: describePlan(plan, renewal.kind),
                 urgency: renewalUrgency(renewal.endDate, today),
                 dueLabel: formatRenewalDue(renewal.endDate, today),
                 outstanding: outstandingAmount(renewal),

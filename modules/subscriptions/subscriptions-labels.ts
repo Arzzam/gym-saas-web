@@ -86,10 +86,6 @@ export function formatRenewalDue(endDate: string | null, today: string = isoToda
     return `Ends in ${days} days`;
 }
 
-export function subscriptionKindLabel(kind: Subscription['kind']): string {
-    return kind === 'BASE' ? 'Membership' : 'Add-on';
-}
-
 /** What the gym is still owed on one line. Never negative — an overpayment is not a debt. */
 export function outstandingAmount(item: Pick<Subscription, 'priceAmount' | 'amountPaid'>): number {
     return Math.max(0, item.priceAmount - item.amountPaid);

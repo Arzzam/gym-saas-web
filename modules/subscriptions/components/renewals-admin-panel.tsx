@@ -18,11 +18,7 @@ import {
     type RenewalRow,
 } from '@/modules/subscriptions/subscriptions-desk';
 import { useRenewalsDesk, useUpdateSubscriptionPayment } from '@/modules/subscriptions/subscriptions-hooks';
-import {
-    renewalUrgencyTone,
-    subscriptionKindLabel,
-    summarizeRenewals,
-} from '@/modules/subscriptions/subscriptions-labels';
+import { renewalUrgencyTone, summarizeRenewals } from '@/modules/subscriptions/subscriptions-labels';
 import { RenewalMemberRail } from '@/modules/subscriptions/components/renewal-member-rail';
 import { RenewalPaymentActions } from '@/modules/subscriptions/components/renewal-payment-actions';
 
@@ -55,8 +51,14 @@ export function RenewalsAdminPanel({ onOrAfter, onOrBefore, today, initialPaymen
     const [selectedId, setSelectedId] = useState<string | null>(null);
 
     const rows = useMemo(
-        () => buildRenewalRows(data?.renewals ?? [], data?.members ?? [], today),
-        [data?.renewals, data?.members, today],
+        () =>
+            buildRenewalRows({
+                renewals: data?.renewals ?? [],
+                members: data?.members ?? [],
+                plans: data?.plans ?? [],
+                today,
+            }),
+        [data?.renewals, data?.members, data?.plans, today],
     );
     const visible = useMemo(() => filterRenewalRows(rows, { payment, query }), [rows, payment, query]);
     const summary = useMemo(() => summarizeRenewals(visible.map((row) => row.renewal)), [visible]);
@@ -151,7 +153,7 @@ export function RenewalsAdminPanel({ onOrAfter, onOrBefore, today, initialPaymen
                                     title={row.displayName}
                                     meta={
                                         <>
-                                            {row.dueLabel} · {subscriptionKindLabel(row.renewal.kind)} ·{' '}
+                                            {row.dueLabel} · {row.planLabel} ·{' '}
                                             <span className="tabular-nums">{formatMoney(row.renewal.priceAmount)}</span>
                                             {row.outstanding > 0 && row.outstanding !== row.renewal.priceAmount ? (
                                                 <>

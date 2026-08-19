@@ -8,6 +8,7 @@ import { listStaffGymOrgs } from '@/modules/gym-orgs/list-staff-gym-orgs';
 import { PlansAdminPanel } from '@/modules/plans/components/plans-admin-panel';
 import { PlansAdminPanelSkeleton } from '@/modules/plans/components/plans-admin-panel-skeleton';
 import type { PlanKind } from '@/modules/plans/plans-ports';
+import { planKindLabel } from '@/modules/plans/plans-labels';
 import { plansKeys } from '@/modules/plans/plans-query-keys';
 import { listPlansForGym } from '@/modules/plans/plans-queries';
 
@@ -15,10 +16,11 @@ type PlansPageProps = {
     searchParams: Promise<{ kind?: string }>;
 };
 
+/** Labels come from `planKindLabel` so the tabs cannot drift from the rows below them. */
 const KIND_TABS: readonly FilterTab[] = [
     { value: 'ALL', label: 'All', href: '/admin/plans' },
-    { value: 'BASE', label: 'Base', href: '/admin/plans?kind=BASE' },
-    { value: 'ADDON', label: 'Add-ons', href: '/admin/plans?kind=ADDON' },
+    { value: 'BASE', label: planKindLabel('BASE'), href: '/admin/plans?kind=BASE' },
+    { value: 'ADDON', label: planKindLabel('ADDON'), href: '/admin/plans?kind=ADDON' },
 ];
 
 function parseKind(raw: string | undefined): PlanKind | 'ALL' {
@@ -72,8 +74,8 @@ export default async function PlansPage({ searchParams }: PlansPageProps) {
             <div>
                 <h1 className="text-2xl font-semibold tracking-tight text-(--color-fg) md:text-3xl">Plans</h1>
                 <p className="mt-2 max-w-2xl text-sm text-(--color-fg-muted)">
-                    Base memberships and add-ons (Trainer coaching). Unpaid members stay entitled unless you manually
-                    block check-in later.
+                    Memberships and add-ons (Trainer coaching). Unpaid members stay entitled unless you manually block
+                    check-in later.
                 </p>
             </div>
 

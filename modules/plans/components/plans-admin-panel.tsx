@@ -6,7 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatMoney } from '@/lib/ui/format-money';
-import { formatPlanDuration, planCapabilityLabel, planKindLabel } from '@/modules/plans/plans-labels';
+import {
+    formatPlanDuration,
+    planCapabilityLabel,
+    planKindLabel,
+    planKindOptionLabel,
+} from '@/modules/plans/plans-labels';
 import { useCreatePlan, useDeletePlan, usePlans, useSetPlanActive } from '@/modules/plans/plans-hooks';
 import type { MembershipPlan, PlanKind } from '@/modules/plans/plans-ports';
 
@@ -14,19 +19,6 @@ type PlansAdminPanelProps = {
     gymName: string;
     kindFilter: PlanKind | 'ALL';
 };
-
-/**
- * Matches the create-form's own SelectItem copy (fuller than planKindLabel's
- * "Base"/"Add-on", which is meant for the catalog list, not this form).
- */
-function planKindSelectLabel(kind: PlanKind): string {
-    switch (kind) {
-        case 'BASE':
-            return 'Base membership';
-        case 'ADDON':
-            return 'Add-on (Trainer coaching)';
-    }
-}
 
 export function PlansAdminPanel({ gymName, kindFilter }: PlansAdminPanelProps) {
     const [name, setName] = useState('');
@@ -100,11 +92,11 @@ export function PlansAdminPanel({ gymName, kindFilter }: PlansAdminPanelProps) {
                         </label>
                         <Select value={kind} onValueChange={(value) => setKind(value as PlanKind)}>
                             <SelectTrigger id="plan-kind" className="mt-2 w-full">
-                                <SelectValue>{(value: PlanKind) => planKindSelectLabel(value)}</SelectValue>
+                                <SelectValue>{(value: PlanKind) => planKindOptionLabel(value)}</SelectValue>
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="BASE">Base membership</SelectItem>
-                                <SelectItem value="ADDON">Add-on (Trainer coaching)</SelectItem>
+                                <SelectItem value="BASE">{planKindOptionLabel('BASE')}</SelectItem>
+                                <SelectItem value="ADDON">{planKindOptionLabel('ADDON')}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -157,7 +149,7 @@ export function PlansAdminPanel({ gymName, kindFilter }: PlansAdminPanelProps) {
                     </p>
                 ) : plans.length === 0 ? (
                     <p className="px-5 py-6 text-sm text-(--color-fg-muted)">
-                        No plans yet. Create a Base membership or an Add-on above.
+                        No plans yet. Create a membership or an add-on above.
                     </p>
                 ) : (
                     <ul className="divide-y divide-(--color-border)/70">

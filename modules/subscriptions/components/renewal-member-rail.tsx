@@ -12,7 +12,8 @@ import {
 } from '@/modules/membership-invites/membership-invites-labels';
 import type { RenewalRow } from '@/modules/subscriptions/subscriptions-desk';
 import { useClientSubscriptions } from '@/modules/subscriptions/subscriptions-hooks';
-import { formatRenewalDue, subscriptionKindLabel } from '@/modules/subscriptions/subscriptions-labels';
+import { planKindLabel } from '@/modules/plans/plans-labels';
+import { formatRenewalDue } from '@/modules/subscriptions/subscriptions-labels';
 import type { Subscription } from '@/modules/subscriptions/subscriptions-ports';
 
 /**
@@ -47,7 +48,7 @@ function SubscriptionLine({ line }: { line: Subscription }) {
         <li className="flex items-center justify-between gap-3 rounded-(--radius-control) border border-(--color-border)/70 px-3 py-2">
             <div className="min-w-0">
                 <p className="truncate text-sm text-(--color-fg)">
-                    {subscriptionKindLabel(line.kind)}
+                    {planKindLabel(line.kind)}
                     {line.capability ? ` · ${line.capability.replace(/_/g, ' ').toLowerCase()}` : ''}
                 </p>
                 <p className="text-xs text-(--color-fg-muted)">{formatRenewalDue(line.endDate)}</p>
@@ -108,7 +109,7 @@ export function RenewalMemberRail({ row }: { row: RenewalRow | null }) {
 
             <WorkQueueRailSection title="This renewal">
                 <div className="space-y-1">
-                    <RailFact label={subscriptionKindLabel(renewal.kind)} value={row.dueLabel} />
+                    <RailFact label={row.planLabel} value={row.dueLabel} />
                     <RailFact label="Billed" value={formatMoney(renewal.priceAmount)} money />
                     <RailFact label="Paid" value={formatMoney(renewal.amountPaid)} money />
                     <RailFact label="Outstanding" value={formatMoney(row.outstanding)} money />

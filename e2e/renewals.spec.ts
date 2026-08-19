@@ -19,6 +19,11 @@ test.describe('Renewals desk', () => {
         // Ada ends tomorrow; everyone else is further out.
         await expect(renewalsPage.rows.first()).toContainText('Ada Client');
         await expect(renewalsPage.rows.first()).toContainText('Ends tomorrow');
+
+        // Which membership, not just "Membership" — a gym with monthly,
+        // quarterly and annual plans is the normal case.
+        await expect(renewalsPage.rows.first()).toContainText('Monthly · 30 days');
+        await expect(renewalsPage.row('Priya Sharma')).toContainText('PT Coaching · Trainer coaching');
     });
 
     test('money strip totals what the window has billed', async ({ staffAdmin, renewalsPage }) => {

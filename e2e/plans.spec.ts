@@ -17,7 +17,7 @@ test.describe('Plan catalog', () => {
             (window as NavProbeWindow).__navProbe = true;
         });
 
-        await plansPage.filterTab('Base').click();
+        await plansPage.filterTab('Membership').click();
         await expect(page).toHaveURL(/kind=BASE/);
         await expect(plansPage.catalogHeading).toBeVisible();
 
@@ -33,7 +33,7 @@ test.describe('Plan catalog', () => {
         await expect(plansPage.heading).toBeVisible();
         await expect(plansPage.catalogHeading).toBeVisible();
 
-        // Toggles the seeded add-on (not the seeded Base plan, which the
+        // Toggles the seeded add-on (not the seeded membership plan, which the
         // Members invite form depends on being active) and restores it, same
         // convention as members-roster.spec.ts's check-in-block restore.
         const addon = 'PT Coaching';
