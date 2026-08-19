@@ -20,7 +20,7 @@ Living project stage for agents and humans. Log entries live one-per-file in `do
 | MCP (Context7, Postman, GitHub, Supabase, Vercel, Playwright) | Configured + connected in Cursor |
 | Playwright E2E skill | Done — `.cursor/skills/playwright-e2e-testing` (from fugazi/test-automation-skills-agents) |
 | Next.js app scaffold | Done — App Router + Clean Arch ports/adapters (build green) |
-| Feature modules | M1 auth; M2 Settings-first + invites; **M3 membership invites + my-data-grants**; **M4 plans/addons**; **roster / attendance / renewals**; **M11 leads** |
+| Feature modules | M1 auth; M2 Settings-first + invites; **M3 membership invites + my-data-grants**; **M4 plans/addons**; **roster / attendance / renewals**; **M11 leads**. Destructive actions across every module are behind one confirm step |
 | Admin CRM-light chrome | Done — Base UI `Sidebar` primitive (icon rail + `Sheet` mobile drawer + cookie-persisted state), light/dark tokens, Settings-only first-run; Client persona shares the same header atoms |
 | Admin navigation latency | Done — page shells do no network work; `loading.tsx` per ops route; filter tabs are `<Link>` in the shell (was a raw `<a>` full-page reload) (ADR-0009) |
 | Client data layer | Done — **TanStack Query v5** across all six Admin modules (ADR-0011): RSC `prefetchQuery` + `<HydrationBoundary>` for first paint, `/api/*` route handlers for refetch, mutations wrapping the existing Server Actions so the auth→lane→tenant gate never moved. Retired all `*-data.tsx`, every `useOptimistic` block, and 18 of 22 `router.refresh()` sites. Navigation between ops screens now serves from cache instead of re-paying ~400ms per hop. CLIENT persona migrated too; the 4 remaining `router.refresh()` calls are session creation and Admin-shell-mode changes, which cache invalidation cannot re-render |
@@ -53,9 +53,12 @@ Living project stage for agents and humans. Log entries live one-per-file in `do
    consistency pass: one `ErrorNotice`, one money formatter (`formatPlanPrice` was a
    byte-identical duplicate), and radii folded back onto the three-value scale. See
    `docs/progress/2026-08-20-desk-layout-module-audit.md`.
-10. **Guard the destructive actions** — Offboard and Delete lead both fire on a single
-    click with no confirm and no undo. Raised during the desk audit and deliberately left
-    out of it, since it is new behaviour rather than consistency.
+10. ~~Guard the destructive actions~~ — **Done.** One `ConfirmActionDialog` across all six
+    (offboard, delete plan, delete lead, revoke membership invite, revoke staff invite,
+    block check-in); unblocking asks nothing. Copy says what happens to the gym's data
+    rather than "cannot be undone". Also fixed a false-passing spec: Base UI hides the
+    page behind an open dialog from the a11y tree, so `toHaveCount(0)` on a row was
+    measuring the dialog, not the delete.
 11. Optional: confirm Google-lane `/auth/refresh` compatibility with an actual browser OAuth round-trip (curl-verified for OTP-lane on `2026-08-16`; Google-lane inferred, not directly hit).
 
 ## Log
