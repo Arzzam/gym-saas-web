@@ -1,5 +1,5 @@
 import { PageHeaderSkeleton } from '@/components/admin/page-header-skeleton';
-import { MembersPageSkeleton } from '@/modules/membership-invites/components/members-page-skeleton';
+import { WorkQueueSkeleton } from '@/components/admin/work-queue-skeleton';
 
 /**
  * Instant route-level fallback. Next prefetches this, so clicking "Members"
@@ -9,7 +9,7 @@ export default function Loading() {
     return (
         <div className="space-y-6">
             <PageHeaderSkeleton />
-            <MembersPageSkeleton />
+            <WorkQueueSkeleton />
         </div>
     );
 }

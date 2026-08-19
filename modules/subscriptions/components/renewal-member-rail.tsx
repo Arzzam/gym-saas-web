@@ -2,19 +2,12 @@
 
 import { Badge } from '@/components/ui/badge';
 import { ContactActions } from '@/components/admin/contact-actions';
+import { ClientSubscriptionLines } from '@/modules/subscriptions/components/client-subscription-lines';
 import { WorkQueueRailPanel, WorkQueueRailSection } from '@/components/admin/work-queue-layout';
 import { cn } from '@/lib/utils';
 import { formatMoney } from '@/lib/ui/format-money';
 import { statusToneBadgeVariant } from '@/lib/ui/status-tone';
-import {
-    membershipPaymentStatusLabel,
-    membershipPaymentStatusTone,
-} from '@/modules/membership-invites/membership-invites-labels';
 import type { RenewalRow } from '@/modules/subscriptions/subscriptions-desk';
-import { useClientSubscriptions } from '@/modules/subscriptions/subscriptions-hooks';
-import { planKindLabel } from '@/modules/plans/plans-labels';
-import { formatRenewalDue } from '@/modules/subscriptions/subscriptions-labels';
-import type { Subscription } from '@/modules/subscriptions/subscriptions-ports';
 
 /**
  * Who the selected row belongs to, and everything the Admin needs to act on it
@@ -43,32 +36,7 @@ function RailFact({ label, value, money = false }: { label: string; value: strin
     );
 }
 
-function SubscriptionLine({ line }: { line: Subscription }) {
-    return (
-        <li className="flex items-center justify-between gap-3 rounded-(--radius-control) border border-(--color-border)/70 px-3 py-2">
-            <div className="min-w-0">
-                <p className="truncate text-sm text-(--color-fg)">
-                    {planKindLabel(line.kind)}
-                    {line.capability ? ` · ${line.capability.replace(/_/g, ' ').toLowerCase()}` : ''}
-                </p>
-                <p className="text-xs text-(--color-fg-muted)">{formatRenewalDue(line.endDate)}</p>
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
-                <span className="text-xs text-(--color-fg-muted) tabular-nums">{formatMoney(line.priceAmount)}</span>
-                <Badge variant={statusToneBadgeVariant(membershipPaymentStatusTone(line.paymentStatus))}>
-                    {membershipPaymentStatusLabel(line.paymentStatus)}
-                </Badge>
-            </div>
-        </li>
-    );
-}
-
 export function RenewalMemberRail({ row }: { row: RenewalRow | null }) {
-    // Hooks run before the early return: the rail unmounting its query on an
-    // empty queue would drop the cache for the member the Admin just left.
-    const clientUserId = row?.renewal.clientUserId ?? null;
-    const { data: lines, isPending, error } = useClientSubscriptions(clientUserId);
-
     if (!row) {
         return (
             <WorkQueueRailPanel>
@@ -117,28 +85,7 @@ export function RenewalMemberRail({ row }: { row: RenewalRow | null }) {
             </WorkQueueRailSection>
 
             <WorkQueueRailSection title="All lines">
-                {error ? (
-                    <p className="text-sm text-(--color-fg-muted)">{error.message}</p>
-                ) : isPending ? (
-                    <div className="space-y-2" aria-hidden>
-                        {[0, 1].map((placeholder) => (
-                            <div
-                                key={placeholder}
-                                className="h-12 animate-pulse rounded-(--radius-control) bg-(--color-border)"
-                            />
-                        ))}
-                    </div>
-                ) : lines && lines.length > 0 ? (
-                    <ul className="space-y-2">
-                        {lines.map((line) => (
-                            <SubscriptionLine key={line.id} line={line} />
-                        ))}
-                    </ul>
-                ) : (
-                    <p className="text-sm text-(--color-fg-muted)">
-                        No other lines. Add-ons appear here once this member buys one.
-                    </p>
-                )}
+                <ClientSubscriptionLines clientUserId={renewal.clientUserId} />
             </WorkQueueRailSection>
         </WorkQueueRailPanel>
     );
