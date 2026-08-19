@@ -1,19 +1,26 @@
 'use client';
 
-import { useState, type SubmitEvent } from 'react';
+import { useMemo, useState } from 'react';
+import { Search } from 'lucide-react';
 
-import { ConfirmActionDialog } from '@/components/admin/confirm-action-dialog';
-import { Button } from '@/components/ui/button';
+import { ErrorNotice } from '@/components/admin/error-notice';
+import { MetricStrip, type Metric } from '@/components/admin/metric-strip';
+import { WorkQueue, WorkQueueLayout, WorkQueueRow } from '@/components/admin/work-queue-layout';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatMoney } from '@/lib/ui/format-money';
+import { statusToneBadgeVariant } from '@/lib/ui/status-tone';
+import { PlanCreateDialog } from '@/modules/plans/components/plan-create-dialog';
+import { PlanDetailRail } from '@/modules/plans/components/plan-detail-rail';
 import {
-    formatPlanDuration,
-    planCapabilityLabel,
-    planKindLabel,
-    planKindOptionLabel,
-} from '@/modules/plans/plans-labels';
-import { useCreatePlan, useDeletePlan, usePlans, useSetPlanActive } from '@/modules/plans/plans-hooks';
+    buildPlanRows,
+    filterPlanRows,
+    planStatusTone,
+    summarizePlans,
+    type PlanRow,
+} from '@/modules/plans/plans-desk';
+import { useDeletePlan, usePlans, useSetPlanActive } from '@/modules/plans/plans-hooks';
+import { formatPlanDuration, planCapabilityLabel, planKindLabel } from '@/modules/plans/plans-labels';
 import type { MembershipPlan, PlanKind } from '@/modules/plans/plans-ports';
 
 type PlansAdminPanelProps = {
@@ -21,184 +28,126 @@ type PlansAdminPanelProps = {
     kindFilter: PlanKind | 'ALL';
 };
 
-export function PlansAdminPanel({ gymName, kindFilter }: PlansAdminPanelProps) {
-    const [name, setName] = useState('');
-    const [kind, setKind] = useState<PlanKind>('BASE');
-    const [durationDays, setDurationDays] = useState('30');
-    const [price, setPrice] = useState('999');
+/** The plan's own terms, as a member would hear them: "₹999 · 30 days". */
+function termLabel(plan: MembershipPlan): string {
+    return `${formatMoney(plan.price)} · ${formatPlanDuration(plan.durationDays)}`;
+}
 
-    // Hydrated from the page's server prefetch — same query key, so this
-    // renders with data on first paint instead of fetching (ADR-0011).
+export function PlansAdminPanel({ gymName, kindFilter }: PlansAdminPanelProps) {
+    // Hydrated from the page's server prefetch — same query key (ADR-0011).
     const { data: plans = [], error: listQueryError } = usePlans(kindFilter);
+
+    // Both mutations are owned here, not in the rail: a delete unmounts the
+    // rail, which would take its mutation and error message with it.
     const setPlanActive = useSetPlanActive(kindFilter);
     const deletePlan = useDeletePlan(kindFilter);
-    const createPlan = useCreatePlan();
+    const rowActionsPending = setPlanActive.isPending || deletePlan.isPending;
 
-    const isPending = setPlanActive.isPending || deletePlan.isPending || createPlan.isPending;
+    const [query, setQuery] = useState('');
+    const [selectedId, setSelectedId] = useState<string | null>(null);
 
-    // Kept as two separate slots, matching the pre-migration props: a failed
-    // list load renders inside the catalog panel, a failed write next to the
-    // form. Mutation errors now live in TanStack, outside the component tree,
-    // so a rolled-back row remounting can no longer discard them — the trap
-    // that forced errors up to the parent under useOptimistic.
-    const listError = listQueryError?.message ?? null;
-    const error = createPlan.error?.message ?? setPlanActive.error?.message ?? deletePlan.error?.message ?? null;
+    const rows = useMemo(() => buildPlanRows(plans, termLabel), [plans]);
+    const visible = useMemo(() => filterPlanRows(rows, query), [rows, query]);
+    const summary = useMemo(() => summarizePlans(rows), [rows]);
 
-    function handleCreate(event: SubmitEvent<HTMLFormElement>) {
-        event.preventDefault();
-        createPlan.mutate(
-            { name, kind, durationDays: Number(durationDays), price: Number(price) },
-            {
-                onSuccess: () => {
-                    setName('');
-                    setDurationDays('30');
-                    setPrice(kind === 'ADDON' ? '1500' : '999');
-                },
-            },
-        );
-    }
+    // Derived, not stored: a search that hides the selected plan falls back to
+    // the top of the catalog rather than leaving a stale rail behind.
+    const selected: PlanRow | null = visible.find((row) => row.plan.id === selectedId) ?? visible[0] ?? null;
 
-    function handleToggle(plan: MembershipPlan) {
-        setPlanActive.mutate({ planId: plan.id, active: !plan.active });
-    }
+    const metrics: Metric[] = [
+        { label: 'Plans', value: String(summary.total), hint: gymName },
+        {
+            label: 'Available',
+            value: String(summary.active),
+            tone: summary.active > 0 ? 'positive' : 'warning',
+            hint: summary.active > 0 ? 'sellable today' : 'nothing to invite onto',
+        },
+        { label: 'Memberships', value: String(summary.memberships) },
+        { label: 'Add-ons', value: String(summary.addons) },
+    ];
 
-    function handleDelete(planId: string) {
-        deletePlan.mutate({ planId });
-    }
+    const message = listQueryError?.message ?? setPlanActive.error?.message ?? deletePlan.error?.message ?? null;
 
     return (
-        <div className="space-y-6">
-            <form
-                onSubmit={handleCreate}
-                className="space-y-4 rounded-(--radius-panel) border border-(--color-border) bg-(--color-surface) p-5 shadow-(--shadow-panel)"
-            >
-                <h2 className="text-sm font-medium text-(--color-fg)">Add plan</h2>
-                <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                        <label htmlFor="plan-name" className="block text-sm font-medium text-(--color-fg)">
-                            Name
-                        </label>
-                        <Input
-                            id="plan-name"
-                            required
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className="mt-2"
-                            placeholder={kind === 'ADDON' ? 'PT Coaching' : 'Monthly'}
-                        />
-                    </div>
-                    <div>
-                        <label htmlFor="plan-kind" className="block text-sm font-medium text-(--color-fg)">
-                            Kind
-                        </label>
-                        <Select value={kind} onValueChange={(value) => setKind(value as PlanKind)}>
-                            <SelectTrigger id="plan-kind" className="mt-2 w-full">
-                                <SelectValue>{(value: PlanKind) => planKindOptionLabel(value)}</SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="BASE">{planKindOptionLabel('BASE')}</SelectItem>
-                                <SelectItem value="ADDON">{planKindOptionLabel('ADDON')}</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div>
-                        <label htmlFor="plan-duration" className="block text-sm font-medium text-(--color-fg)">
-                            Duration (days)
-                        </label>
-                        <Input
-                            id="plan-duration"
-                            type="number"
-                            min={1}
-                            required
-                            value={durationDays}
-                            onChange={(e) => setDurationDays(e.target.value)}
-                            className="mt-2"
-                        />
-                    </div>
-                    <div>
-                        <label htmlFor="plan-price" className="block text-sm font-medium text-(--color-fg)">
-                            Price (INR)
-                        </label>
-                        <Input
-                            id="plan-price"
-                            type="number"
-                            min={0}
-                            required
-                            value={price}
-                            onChange={(e) => setPrice(e.target.value)}
-                            className="mt-2"
-                        />
-                    </div>
-                </div>
-                {error ? (
-                    <p role="alert" className="text-sm text-(--color-danger)">
-                        {error}
-                    </p>
-                ) : null}
-                <Button type="submit" disabled={isPending}>
-                    {isPending ? 'Saving…' : 'Create plan'}
-                </Button>
-            </form>
+        <div className="space-y-4">
+            <ErrorNotice message={message} />
 
-            <div className="rounded-(--radius-panel) border border-(--color-border) bg-(--color-surface) shadow-(--shadow-panel)">
-                <div className="border-b border-(--color-border)/80 px-5 py-3">
-                    <h2 className="text-sm font-medium text-(--color-fg)">Catalog for {gymName}</h2>
-                </div>
-                {listError ? (
-                    <p role="alert" className="px-5 py-4 text-sm text-(--color-danger)">
-                        {listError}
-                    </p>
-                ) : plans.length === 0 ? (
-                    <p className="px-5 py-6 text-sm text-(--color-fg-muted)">
-                        No plans yet. Create a membership or an add-on above.
-                    </p>
-                ) : (
-                    <ul className="divide-y divide-(--color-border)/70">
-                        {plans.map((plan) => (
-                            <li
-                                key={plan.id}
-                                className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
-                            >
-                                <div className="min-w-0 space-y-1">
-                                    <p className="text-sm font-medium text-(--color-fg)">
-                                        {plan.name}
-                                        <span className="mx-2 text-(--color-fg-muted)">·</span>
-                                        <span className="font-normal text-(--color-fg-muted)">
-                                            {planKindLabel(plan.kind)}
-                                        </span>
-                                    </p>
-                                    <p className="text-xs text-(--color-fg-muted)">
-                                        {formatMoney(plan.price)} · {formatPlanDuration(plan.durationDays)}
-                                        {plan.kind === 'ADDON' ? ` · ${planCapabilityLabel(plan.capability)}` : ''}
-                                        {plan.active ? '' : ' · Inactive'}
-                                    </p>
-                                </div>
-                                <div className="flex shrink-0 gap-2">
-                                    <Button
-                                        type="button"
-                                        variant="secondary"
-                                        className="text-xs"
-                                        disabled={isPending}
-                                        onClick={() => handleToggle(plan)}
-                                    >
-                                        {plan.active ? 'Deactivate' : 'Activate'}
-                                    </Button>
-                                    <ConfirmActionDialog
-                                        trigger={<Button type="button" variant="ghost" className="text-xs" />}
-                                        title={`Delete ${plan.name}?`}
-                                        description="It leaves the catalog and can no longer be sold. Members already on this plan keep their subscription and the price they were charged."
-                                        confirmLabel="Delete plan"
-                                        disabled={isPending}
-                                        onConfirm={() => handleDelete(plan.id)}
-                                    >
-                                        Delete
-                                    </ConfirmActionDialog>
-                                </div>
-                            </li>
-                        ))}
-                    </ul>
-                )}
-            </div>
+            <WorkQueueLayout
+                selectedKey={selected?.plan.id ?? null}
+                railLabel="Selected plan"
+                summary={<MetricStrip metrics={metrics} label="Catalog summary" />}
+                toolbar={
+                    <div className="flex flex-wrap items-center gap-2">
+                        <div className="relative min-w-48 flex-1">
+                            <Search
+                                aria-hidden
+                                className="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-(--color-fg-muted)"
+                            />
+                            <Input
+                                type="search"
+                                className="pl-8"
+                                placeholder="Search plans"
+                                aria-label="Search plans"
+                                value={query}
+                                onChange={(event) => setQuery(event.target.value)}
+                            />
+                        </div>
+                        <PlanCreateDialog />
+                    </div>
+                }
+                queue={
+                    visible.length === 0 ? (
+                        <div className="rounded-(--radius-panel) border border-(--color-border)/80 bg-(--color-surface) p-8 text-center shadow-(--shadow-panel)">
+                            <p className="text-sm font-medium text-(--color-fg)">
+                                {rows.length === 0 ? 'No plans yet' : 'No plans match this search'}
+                            </p>
+                            <p className="mt-1 text-sm text-(--color-fg-muted)">
+                                {rows.length === 0
+                                    ? 'Create a membership or an add-on to start inviting members.'
+                                    : 'Clear the search, or switch the type filter.'}
+                            </p>
+                        </div>
+                    ) : (
+                        <WorkQueue label="Plan catalog">
+                            {visible.map((row) => (
+                                <WorkQueueRow
+                                    key={row.plan.id}
+                                    tone={planStatusTone(row.plan)}
+                                    selected={row.plan.id === selected?.plan.id}
+                                    onSelect={() => setSelectedId(row.plan.id)}
+                                    selectLabel={`Open ${row.plan.name}`}
+                                    title={row.plan.name}
+                                    meta={
+                                        <>
+                                            <span className="tabular-nums">{row.termLabel}</span> ·{' '}
+                                            {planKindLabel(row.plan.kind)}
+                                            {row.plan.kind === 'ADDON'
+                                                ? ` · ${planCapabilityLabel(row.plan.capability)}`
+                                                : ''}
+                                        </>
+                                    }
+                                    trailing={
+                                        row.plan.active ? null : (
+                                            <Badge variant={statusToneBadgeVariant(planStatusTone(row.plan))}>
+                                                Retired
+                                            </Badge>
+                                        )
+                                    }
+                                />
+                            ))}
+                        </WorkQueue>
+                    )
+                }
+                rail={
+                    <PlanDetailRail
+                        row={selected}
+                        kindFilter={kindFilter}
+                        onToggleActive={(plan) => setPlanActive.mutate({ planId: plan.id, active: !plan.active })}
+                        onDelete={(planId) => deletePlan.mutate({ planId })}
+                        rowActionsPending={rowActionsPending}
+                    />
+                }
+            />
         </div>
     );
 }

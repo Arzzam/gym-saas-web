@@ -3,48 +3,59 @@ import type { Locator, Page } from '@playwright/test';
 export class PlansPage {
     readonly page: Page;
     readonly heading: Locator;
-    readonly nameInput: Locator;
-    readonly durationInput: Locator;
-    readonly priceInput: Locator;
-    readonly createButton: Locator;
-    readonly catalogHeading: Locator;
-    readonly filterTabs: Locator;
+    readonly kindTabs: Locator;
+    readonly search: Locator;
+    readonly createTrigger: Locator;
+    readonly queue: Locator;
+    readonly rows: Locator;
+    readonly rail: Locator;
+    readonly summary: Locator;
 
     constructor(page: Page) {
         this.page = page;
         this.heading = page.getByRole('heading', { name: 'Plans', exact: true });
-        this.nameInput = page.getByLabel('Name', { exact: true });
-        this.durationInput = page.getByLabel('Duration (days)', { exact: true });
-        this.priceInput = page.getByLabel('Price (INR)', { exact: true });
-        this.createButton = page.getByRole('button', { name: 'Create plan' });
-        this.catalogHeading = page.getByRole('heading', { name: /Catalog for/ });
-        this.filterTabs = page.getByRole('navigation', { name: 'Filter plans by kind' });
-    }
-
-    filterTab(label: string): Locator {
-        return this.filterTabs.getByRole('link', { name: label, exact: true });
+        this.kindTabs = page.getByRole('navigation', { name: 'Filter plans by kind' });
+        this.search = page.getByRole('searchbox', { name: 'Search plans' });
+        this.createTrigger = page.getByRole('button', { name: 'New plan' });
+        this.queue = page.getByRole('list', { name: 'Plan catalog' });
+        this.rows = this.queue.getByRole('listitem');
+        this.rail = page.getByRole('complementary', { name: 'Selected plan' });
+        this.summary = page.getByRole('region', { name: 'Catalog summary' });
     }
 
     async goto() {
         await this.page.goto('/admin/plans');
     }
 
-    async createBasePlan(name: string, durationDays: string, price: string) {
-        await this.nameInput.fill(name);
-        await this.durationInput.fill(durationDays);
-        await this.priceInput.fill(price);
-        await this.createButton.click();
+    filterTab(label: string): Locator {
+        return this.kindTabs.getByRole('link', { name: label, exact: true });
     }
 
     planRow(name: string): Locator {
-        return this.page.getByRole('listitem').filter({ hasText: name });
+        return this.rows.filter({ hasText: name });
     }
 
-    toggleButton(name: string): Locator {
-        return this.planRow(name).getByRole('button', { name: /Deactivate|Activate/ });
+    /** Selecting a row is what loads the rail — every detail action goes through here. */
+    async selectPlan(name: string) {
+        await this.queue.getByRole('button', { name: `Open ${name}` }).click();
     }
 
-    deleteButton(name: string): Locator {
-        return this.planRow(name).getByRole('button', { name: 'Delete' });
+    /** Create is a dialog now, not a permanent form above the catalog. */
+    async createPlan(name: string, durationDays: string, price: string) {
+        await this.createTrigger.click();
+        const dialog = this.page.getByRole('dialog');
+        await dialog.getByLabel('Name', { exact: true }).fill(name);
+        await dialog.getByLabel('Duration (days)', { exact: true }).fill(durationDays);
+        await dialog.getByLabel('Price (INR)', { exact: true }).fill(price);
+        await dialog.getByRole('button', { name: 'Create plan' }).click();
+    }
+
+    /** Availability and delete live in the rail, so the plan must be selected first. */
+    get toggleActiveButton(): Locator {
+        return this.rail.getByRole('button', { name: /Retire this plan|Make available again/ });
+    }
+
+    get deleteButton(): Locator {
+        return this.rail.getByRole('button', { name: 'Delete plan', exact: true });
     }
 }

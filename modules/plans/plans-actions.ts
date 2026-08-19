@@ -116,6 +116,56 @@ export async function createPlanAction(input: {
     }
 }
 
+/**
+ * Edit a plan's name, term or price.
+ *
+ * `updatePlan` has been wired to the adapter since the module landed, but the
+ * only caller was `setPlanActiveAction` sending `{ active }` — so a gym could
+ * create a plan and then never correct a typo in its name or move its price.
+ * Validation mirrors `createPlanAction`: the same fields deserve the same
+ * rules, and a plan that could not be created should not be reachable by edit.
+ *
+ * `kind` is deliberately absent. Turning a membership into an add-on would
+ * change what every existing subscription on it means, and the API's own
+ * `UpdatePlanInput` does not accept it either.
+ */
+export async function updatePlanAction(input: {
+    planId: string;
+    name: string;
+    durationDays: number;
+    price: number;
+}): Promise<PlanActionResult> {
+    const gate = await requireStaffAdminGym();
+    if (!gate.ok) {
+        return gate.result;
+    }
+
+    const name = input.name.trim();
+    if (name.length < 2) {
+        return { ok: false, code: 'VALIDATION_ERROR', message: 'Enter a plan name (at least 2 characters).' };
+    }
+    if (!Number.isFinite(input.durationDays) || input.durationDays < 1) {
+        return { ok: false, code: 'VALIDATION_ERROR', message: 'Duration must be at least 1 day.' };
+    }
+    if (!Number.isFinite(input.price) || input.price < 0) {
+        return { ok: false, code: 'VALIDATION_ERROR', message: 'Enter a valid price.' };
+    }
+
+    try {
+        const { updatePlan } = createAppServices();
+        await updatePlan({
+            accessToken: gate.accessToken,
+            gymOrgId: gate.gymOrgId,
+            planId: input.planId,
+            body: { name, durationDays: Math.floor(input.durationDays), price: input.price },
+        });
+        revalidatePath('/admin/plans');
+        return { ok: true };
+    } catch (error) {
+        return fail(error);
+    }
+}
+
 export async function setPlanActiveAction(input: { planId: string; active: boolean }): Promise<PlanActionResult> {
     const gate = await requireStaffAdminGym();
     if (!gate.ok) {

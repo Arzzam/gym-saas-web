@@ -3,7 +3,12 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 
 import { getJson } from '@/lib/query/api-fetch';
-import { createPlanAction, deletePlanAction, setPlanActiveAction } from '@/modules/plans/plans-actions';
+import {
+    createPlanAction,
+    deletePlanAction,
+    setPlanActiveAction,
+    updatePlanAction,
+} from '@/modules/plans/plans-actions';
 import { planErrorMessage } from '@/modules/plans/plans-errors';
 import type { MembershipPlan, PlanKind } from '@/modules/plans/plans-ports';
 import { plansKeys } from '@/modules/plans/plans-query-keys';
@@ -79,6 +84,36 @@ export function useSetPlanActive(kindFilter: PlanKind | 'ALL') {
         onMutate: (input) =>
             applyOptimistic(queryClient, key, (plans) =>
                 plans.map((plan) => (plan.id === input.planId ? { ...plan, active: input.active } : plan)),
+            ),
+        onError: (_error, _input, context) => rollback(queryClient, key, context),
+        onSettled: () => queryClient.invalidateQueries({ queryKey: plansKeys.all }),
+    });
+}
+
+/**
+ * Optimistic: name, term and price are exactly what the Admin typed, so the
+ * row can show them immediately. Contrast `useCreatePlan`, which cannot be
+ * optimistic because the server assigns the id and derived `capability`.
+ */
+export function useUpdatePlan(kindFilter: PlanKind | 'ALL') {
+    const queryClient = useQueryClient();
+    const key = plansKeys.list(kindFilter);
+
+    return useMutation({
+        mutationFn: async (input: { planId: string; name: string; durationDays: number; price: number }) => {
+            const result = await updatePlanAction(input);
+            if (!result.ok) {
+                throw new Error(result.message);
+            }
+            return result;
+        },
+        onMutate: (input) =>
+            applyOptimistic(queryClient, key, (plans) =>
+                plans.map((plan) =>
+                    plan.id === input.planId
+                        ? { ...plan, name: input.name, durationDays: input.durationDays, price: input.price }
+                        : plan,
+                ),
             ),
         onError: (_error, _input, context) => rollback(queryClient, key, context),
         onSettled: () => queryClient.invalidateQueries({ queryKey: plansKeys.all }),
