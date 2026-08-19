@@ -36,6 +36,13 @@ export function createE2eSubscriptionsAdapter(): SubscriptionsReader & Subscript
             };
         },
 
+        async listClientSubscriptions({ gymOrgId, clientUserId }) {
+            const subscriptions: Subscription[] = e2eRenewals
+                .filter((item) => item.gymOrgId === gymOrgId && item.clientUserId === clientUserId)
+                .map((item) => ({ ...item }));
+            return { subscriptions };
+        },
+
         async updatePayment({ gymOrgId, subscriptionId, body }) {
             const idx = e2eRenewals.findIndex((item) => item.id === subscriptionId && item.gymOrgId === gymOrgId);
             if (idx < 0) {

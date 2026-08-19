@@ -3,6 +3,7 @@ import { areE2eFixturesEnabled } from '@/lib/api/e2e/store';
 import { createE2eSubscriptionsAdapter } from '@/modules/subscriptions/subscriptions-e2e-fixtures';
 import { createSubscriptionsAdapter } from '@/modules/subscriptions/subscriptions-adapter';
 import {
+    createListClientSubscriptions,
     createListRenewalsDue,
     createUpdateSubscriptionPayment,
 } from '@/modules/subscriptions/subscriptions-use-cases';
@@ -13,6 +14,7 @@ export function subscriptionsServices(http: HttpClient) {
     return {
         subscriptions,
         listRenewalsDue: createListRenewalsDue({ subscriptions }),
+        listClientSubscriptions: createListClientSubscriptions({ subscriptions }),
         updateSubscriptionPayment: createUpdateSubscriptionPayment({
             subscriptions,
         }),

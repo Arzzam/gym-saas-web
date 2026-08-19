@@ -34,6 +34,10 @@ const subscriptionEnvelopeSchema = z.object({
     subscription: subscriptionSchema,
 });
 
+const clientSubscriptionsEnvelopeSchema = z.object({
+    subscriptions: z.array(subscriptionSchema),
+});
+
 const renewalsPageSchema = z.object({
     renewals: z.object({
         items: z.array(subscriptionSchema),
@@ -98,6 +102,18 @@ export function createSubscriptionsAdapter(http: HttpClient): SubscriptionsReade
                         clientUserId: item.clientUserId ?? '',
                     })),
                 },
+            };
+        },
+
+        async listClientSubscriptions({ accessToken, gymOrgId, clientUserId }) {
+            const raw = await http.request<unknown>({
+                path: endpoints.gymOrgClientSubscriptions(gymOrgId, clientUserId),
+                method: 'GET',
+                accessToken,
+            });
+            const parsed = clientSubscriptionsEnvelopeSchema.parse(raw);
+            return {
+                subscriptions: parsed.subscriptions.map((item) => normalizeSubscription(item, gymOrgId)),
             };
         },
 

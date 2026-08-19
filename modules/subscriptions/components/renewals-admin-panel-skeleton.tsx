@@ -1,29 +1,48 @@
 /**
- * Suspense fallback for RenewalsData — mirrors the renewals-due list shape
- * so the layout doesn't shift when real data streams in.
+ * Suspense fallback for the renewals desk — mirrors the metric strip, toolbar
+ * and queue/rail grid so nothing shifts when real data streams in (ADR-0009).
+ * Grey bars only: never a duplicated heading, never a placeholder row that
+ * could be mistaken for a real member.
  */
 export function RenewalsAdminPanelSkeleton() {
     return (
-        <div className="space-y-3" aria-hidden="true">
-            <div className="h-4 w-28 animate-pulse rounded bg-(--color-border)" />
-            <ul className="divide-y divide-(--color-border) rounded-(--radius-panel) border border-(--color-border) bg-(--color-surface)">
-                {[0, 1, 2].map((row) => (
-                    <li
-                        key={row}
-                        className="flex flex-col gap-3 px-4 py-4 md:flex-row md:items-center md:justify-between"
-                    >
-                        <div className="space-y-2">
-                            <div className="h-3 w-40 animate-pulse rounded bg-(--color-border)" />
-                            <div className="h-3 w-56 animate-pulse rounded bg-(--color-border)" />
-                        </div>
-                        <div className="flex gap-2">
-                            {[0, 1, 2].map((btn) => (
-                                <div key={btn} className="h-8 w-24 animate-pulse rounded-md bg-(--color-border)" />
-                            ))}
-                        </div>
-                    </li>
+        <div className="space-y-4" aria-hidden="true">
+            <div className="grid grid-cols-2 gap-px overflow-hidden rounded-(--radius-panel) border border-(--color-border)/60 bg-(--color-border)/60 sm:grid-cols-4">
+                {[0, 1, 2, 3].map((cell) => (
+                    <div key={cell} className="space-y-2 bg-(--color-surface) px-4 py-3">
+                        <div className="h-3 w-16 animate-pulse rounded bg-(--color-border)" />
+                        <div className="h-5 w-20 animate-pulse rounded bg-(--color-border)" />
+                    </div>
                 ))}
-            </ul>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+                <div className="h-9 w-64 animate-pulse rounded-(--radius-pill) bg-(--color-border)" />
+                <div className="h-9 min-w-48 flex-1 animate-pulse rounded-(--radius-control) bg-(--color-border)" />
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start">
+                <ul className="divide-y divide-(--color-border)/70 overflow-hidden rounded-(--radius-panel) border border-(--color-border)/80 bg-(--color-surface) shadow-(--shadow-panel)">
+                    {[0, 1, 2].map((row) => (
+                        <li key={row} className="flex items-center justify-between gap-3 px-4 py-3">
+                            <div className="space-y-2">
+                                <div className="h-3.5 w-36 animate-pulse rounded bg-(--color-border)" />
+                                <div className="h-3 w-56 animate-pulse rounded bg-(--color-border)" />
+                            </div>
+                            <div className="flex gap-2">
+                                <div className="h-6 w-16 animate-pulse rounded-(--radius-pill) bg-(--color-border)" />
+                                <div className="h-7 w-20 animate-pulse rounded-(--radius-control) bg-(--color-border)" />
+                            </div>
+                        </li>
+                    ))}
+                </ul>
+
+                <div className="space-y-3 rounded-(--radius-panel) border border-(--color-border)/80 bg-(--color-surface) p-4 shadow-(--shadow-panel)">
+                    <div className="h-5 w-32 animate-pulse rounded bg-(--color-border)" />
+                    <div className="h-8 w-full animate-pulse rounded-(--radius-control) bg-(--color-border)" />
+                    <div className="h-24 w-full animate-pulse rounded-(--radius-control) bg-(--color-border)" />
+                </div>
+            </div>
         </div>
     );
 }

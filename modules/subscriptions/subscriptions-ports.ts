@@ -51,6 +51,16 @@ export type SubscriptionsReader = {
         limit?: number;
         offset?: number;
     }) => Promise<{ renewals: RenewalPage }>;
+
+    /**
+     * Every line (BASE + ADDONs) for one client, for the detail rail. Returns a
+     * plain array, not a page — the API does not paginate this one.
+     */
+    listClientSubscriptions: (input: {
+        accessToken: string;
+        gymOrgId: string;
+        clientUserId: string;
+    }) => Promise<{ subscriptions: Subscription[] }>;
 };
 
 export type SubscriptionsWriter = {

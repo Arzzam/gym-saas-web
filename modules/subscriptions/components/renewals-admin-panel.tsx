@@ -1,96 +1,189 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
-import { membershipPaymentStatusLabel } from '@/modules/membership-invites/membership-invites-labels';
-import { useRenewalsDue, useUpdateSubscriptionPayment } from '@/modules/subscriptions/subscriptions-hooks';
-import type { SubscriptionPaymentStatus } from '@/modules/subscriptions/subscriptions-ports';
+import { useMemo, useState } from 'react';
+import { Search } from 'lucide-react';
+
+import { MetricStrip, type Metric } from '@/components/admin/metric-strip';
+import { SegmentedFilter, type Segment } from '@/components/admin/segmented-filter';
+import { WorkQueue, WorkQueueLayout, WorkQueueRow } from '@/components/admin/work-queue-layout';
+import { Input } from '@/components/ui/input';
+import { useShallowSearchParam } from '@/hooks/use-shallow-search-param';
+import { formatMoney } from '@/lib/ui/format-money';
+import {
+    buildRenewalRows,
+    filterRenewalRows,
+    RENEWAL_PAYMENT_FILTERS,
+    type RenewalPaymentFilter,
+    type RenewalRow,
+} from '@/modules/subscriptions/subscriptions-desk';
+import { useRenewalsDesk, useUpdateSubscriptionPayment } from '@/modules/subscriptions/subscriptions-hooks';
+import {
+    renewalUrgencyTone,
+    subscriptionKindLabel,
+    summarizeRenewals,
+} from '@/modules/subscriptions/subscriptions-labels';
+import { RenewalMemberRail } from '@/modules/subscriptions/components/renewal-member-rail';
+import { RenewalPaymentActions } from '@/modules/subscriptions/components/renewal-payment-actions';
 
 type RenewalsAdminPanelProps = {
     onOrAfter: string;
     onOrBefore: string;
+    /**
+     * Resolved on the server and passed down so "ends in 3 days" is computed
+     * from one clock. Deriving it in the client would let SSR and hydration
+     * straddle UTC midnight and disagree about what day it is.
+     */
+    today: string;
+    initialPayment: RenewalPaymentFilter;
 };
 
-const PAYMENT_OPTIONS: SubscriptionPaymentStatus[] = ['unpaid', 'paid', 'partial'];
+const PAYMENT_LABEL: Record<RenewalPaymentFilter, string> = {
+    all: 'All',
+    unpaid: 'Unpaid',
+    partial: 'Partial',
+    paid: 'Paid',
+};
 
-export function RenewalsAdminPanel({ onOrAfter, onOrBefore }: RenewalsAdminPanelProps) {
+export function RenewalsAdminPanel({ onOrAfter, onOrBefore, today, initialPayment }: RenewalsAdminPanelProps) {
     // Hydrated from the page's server prefetch — same query key (ADR-0011).
-    const { data: renewals = [], error: listQueryError } = useRenewalsDue(onOrAfter, onOrBefore);
+    const { data, error: listQueryError } = useRenewalsDesk(onOrAfter, onOrBefore);
     const updatePayment = useUpdateSubscriptionPayment(onOrAfter, onOrBefore);
 
-    const isPending = updatePayment.isPending;
-    const listError = listQueryError?.message ?? null;
-    const error = updatePayment.error?.message ?? null;
+    const [payment, setPayment] = useShallowSearchParam<RenewalPaymentFilter>('payment', initialPayment, 'all');
+    const [query, setQuery] = useState('');
+    const [selectedId, setSelectedId] = useState<string | null>(null);
 
-    function handlePaymentUpdate(
-        subscriptionId: string,
-        paymentStatus: SubscriptionPaymentStatus,
-        priceAmount: number,
-    ) {
-        updatePayment.mutate({
-            subscriptionId,
-            paymentStatus,
-            amountPaid:
-                paymentStatus === 'partial'
-                    ? Math.max(1, Math.floor(priceAmount / 2))
-                    : paymentStatus === 'paid'
-                      ? priceAmount
-                      : 0,
-        });
-    }
+    const rows = useMemo(
+        () => buildRenewalRows(data?.renewals ?? [], data?.members ?? [], today),
+        [data?.renewals, data?.members, today],
+    );
+    const visible = useMemo(() => filterRenewalRows(rows, { payment, query }), [rows, payment, query]);
+    const summary = useMemo(() => summarizeRenewals(visible.map((row) => row.renewal)), [visible]);
+
+    const paymentCounts = useMemo(
+        () =>
+            rows.reduce<Record<string, number>>(
+                (acc, row) => ({ ...acc, [row.renewal.paymentStatus]: (acc[row.renewal.paymentStatus] ?? 0) + 1 }),
+                {},
+            ),
+        [rows],
+    );
+
+    // Derived, not stored: a filter change that hides the selected row falls
+    // back to the top of the queue instead of leaving an empty rail behind.
+    const selected: RenewalRow | null = visible.find((row) => row.renewal.id === selectedId) ?? visible[0] ?? null;
+
+    const segments: Segment<RenewalPaymentFilter>[] = RENEWAL_PAYMENT_FILTERS.map((value) => ({
+        value,
+        label: PAYMENT_LABEL[value],
+        count: value === 'all' ? rows.length : (paymentCounts[value] ?? 0),
+    }));
+
+    const metrics: Metric[] = [
+        { label: 'Renewals', value: String(summary.count), hint: 'in this window' },
+        { label: 'Billed', value: formatMoney(summary.billed) },
+        { label: 'Collected', value: formatMoney(summary.collected), tone: 'positive' },
+        {
+            label: 'Outstanding',
+            value: formatMoney(summary.outstanding),
+            // Money owed needs attention; it never denies access on its own.
+            tone: summary.outstanding > 0 ? 'warning' : 'neutral',
+            hint: summary.unsettledCount > 0 ? `${summary.unsettledCount} to collect` : 'all settled',
+        },
+    ];
+
+    const message = updatePayment.error?.message ?? listQueryError?.message ?? null;
 
     return (
-        <div className="space-y-6">
-            {(listError || error) && (
+        <div className="space-y-4">
+            {message ? (
                 <p
-                    className="rounded-md border border-(--color-border) bg-(--color-surface) px-3 py-2 text-sm text-(--color-danger)"
+                    className="rounded-(--radius-control) border border-(--color-border) bg-(--color-surface) px-3 py-2 text-sm text-(--color-danger)"
                     role="alert"
                 >
-                    {error ?? listError}
+                    {message}
                 </p>
-            )}
+            ) : null}
 
-            <section className="space-y-3">
-                <h2 className="text-sm font-semibold text-(--color-fg)">Renewals due</h2>
-                {renewals.length === 0 ? (
-                    <p className="text-sm text-(--color-fg-muted)">No renewals in this window.</p>
-                ) : (
-                    <ul className="divide-y divide-(--color-border) rounded-(--radius-panel) border border-(--color-border) bg-(--color-surface)">
-                        {renewals.map((item) => (
-                            <li
-                                key={item.id}
-                                className="flex flex-col gap-3 px-4 py-4 md:flex-row md:items-center md:justify-between"
-                            >
-                                <div className="min-w-0 space-y-1">
-                                    <p className="font-medium text-(--color-fg)">
-                                        {item.kind} · ends {item.endDate ?? '—'}
-                                    </p>
-                                    <p className="text-sm text-(--color-fg-muted)">
-                                        Client {item.clientUserId.slice(0, 8)}… · ₹{item.priceAmount} /{' '}
-                                        {item.durationDays}d
-                                    </p>
-                                    <p className="text-xs text-(--color-fg-muted)">
-                                        {membershipPaymentStatusLabel(item.paymentStatus)}
-                                        {item.amountPaid > 0 ? ` · paid ₹${item.amountPaid}` : ''}
-                                    </p>
-                                </div>
-                                <div className="flex flex-wrap items-center gap-2">
-                                    {PAYMENT_OPTIONS.map((status) => (
-                                        <Button
-                                            key={status}
-                                            type="button"
-                                            variant="secondary"
-                                            disabled={isPending || item.paymentStatus === status}
-                                            onClick={() => handlePaymentUpdate(item.id, status, item.priceAmount)}
-                                        >
-                                            Mark {membershipPaymentStatusLabel(status)}
-                                        </Button>
-                                    ))}
-                                </div>
-                            </li>
-                        ))}
-                    </ul>
-                )}
-            </section>
+            <WorkQueueLayout
+                selectedKey={selected?.renewal.id ?? null}
+                railLabel="Selected member"
+                summary={<MetricStrip metrics={metrics} label="Renewals summary" />}
+                toolbar={
+                    <div className="flex flex-wrap items-center gap-2">
+                        <SegmentedFilter
+                            segments={segments}
+                            value={payment}
+                            onChange={setPayment}
+                            label="Filter renewals by payment"
+                        />
+                        <div className="relative min-w-48 flex-1">
+                            <Search
+                                aria-hidden
+                                className="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-(--color-fg-muted)"
+                            />
+                            <Input
+                                type="search"
+                                className="pl-8"
+                                placeholder="Search name, email or phone"
+                                aria-label="Search renewals"
+                                value={query}
+                                onChange={(event) => setQuery(event.target.value)}
+                            />
+                        </div>
+                    </div>
+                }
+                queue={
+                    visible.length === 0 ? (
+                        <div className="rounded-(--radius-panel) border border-(--color-border)/80 bg-(--color-surface) p-8 text-center shadow-(--shadow-panel)">
+                            <p className="text-sm font-medium text-(--color-fg)">
+                                {rows.length === 0 ? 'Nothing due in this window' : 'No renewals match these filters'}
+                            </p>
+                            <p className="mt-1 text-sm text-(--color-fg-muted)">
+                                {rows.length === 0
+                                    ? 'Widen the window above to look further ahead, or check the overdue tab.'
+                                    : 'Clear the search or switch back to All.'}
+                            </p>
+                        </div>
+                    ) : (
+                        <WorkQueue label="Renewals due">
+                            {visible.map((row) => (
+                                <WorkQueueRow
+                                    key={row.renewal.id}
+                                    tone={renewalUrgencyTone(row.urgency)}
+                                    selected={row.renewal.id === selected?.renewal.id}
+                                    onSelect={() => setSelectedId(row.renewal.id)}
+                                    selectLabel={`Open ${row.displayName}`}
+                                    title={row.displayName}
+                                    meta={
+                                        <>
+                                            {row.dueLabel} · {subscriptionKindLabel(row.renewal.kind)} ·{' '}
+                                            <span className="tabular-nums">{formatMoney(row.renewal.priceAmount)}</span>
+                                            {row.outstanding > 0 && row.outstanding !== row.renewal.priceAmount ? (
+                                                <>
+                                                    {' · '}
+                                                    <span className="tabular-nums">
+                                                        {formatMoney(row.outstanding)}
+                                                    </span>{' '}
+                                                    left
+                                                </>
+                                            ) : null}
+                                        </>
+                                    }
+                                    trailing={
+                                        <RenewalPaymentActions
+                                            item={row.renewal}
+                                            disabled={updatePayment.isPending}
+                                            onUpdate={(update) => updatePayment.mutate(update)}
+                                        />
+                                    }
+                                />
+                            ))}
+                        </WorkQueue>
+                    )
+                }
+                rail={<RenewalMemberRail row={selected} />}
+            />
         </div>
     );
 }

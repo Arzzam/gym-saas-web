@@ -75,7 +75,16 @@ export function sampleInvite(overrides: Partial<StaffInvite> = {}): StaffInvite 
     };
 }
 
-/** In-memory invites for E2E — reset per process (Playwright workers are isolated enough). */
+/**
+ * In-memory fixtures, created once per server process.
+ *
+ * Playwright's workers are **not** isolated from each other here: they are
+ * browser contexts sharing one `next start`, so every worker reads and writes
+ * these same arrays. A spec that mutates a row therefore has to own that row —
+ * two tests racing for one record is a flake, not a bug in the app. Give each
+ * mutating test its own fixture, and keep shared assertions on fields no
+ * mutation touches (a price, a row count, a name).
+ */
 export const e2eGymInvites = e2eShared('gymInvites', (): StaffInvite[] => [
     sampleInvite({ id: 'invite-e2e-gym-pending' }),
 ]);
@@ -157,12 +166,79 @@ export const e2eRosterMembers = e2eShared('rosterMembers', (): RosterMember[] =>
         assignedTrainerId: null,
         clientName: 'Ada Client',
         clientEmail: 'ada@example.com',
-        clientPhone: null,
+        clientPhone: '+919876500001',
         joinedAt: '2026-08-08T12:00:00.000Z',
         leftAt: null,
         basePaymentStatus: 'unpaid',
         baseAmountPaid: 0,
         basePriceAmount: 999,
+    },
+    {
+        membershipId: 'membership-e2e-active-2',
+        clientUserId: 'e2e-client-roster-2',
+        gymOrgId: E2E_GYM_ID,
+        status: 'ACTIVE',
+        checkInBlocked: false,
+        assignedTrainerId: null,
+        clientName: 'Rahul Menon',
+        clientEmail: 'rahul@example.com',
+        clientPhone: '+919876500002',
+        joinedAt: '2026-08-06T12:00:00.000Z',
+        leftAt: null,
+        basePaymentStatus: 'partial',
+        baseAmountPaid: 500,
+        basePriceAmount: 1499,
+    },
+    {
+        // No phone: the desk must degrade to email-only contact, not render a dead tel: link.
+        membershipId: 'membership-e2e-active-3',
+        clientUserId: 'e2e-client-roster-3',
+        gymOrgId: E2E_GYM_ID,
+        status: 'ACTIVE',
+        checkInBlocked: false,
+        assignedTrainerId: null,
+        clientName: 'Priya Sharma',
+        clientEmail: 'priya@example.com',
+        clientPhone: null,
+        joinedAt: '2026-08-04T12:00:00.000Z',
+        leftAt: null,
+        basePaymentStatus: 'paid',
+        baseAmountPaid: 799,
+        basePriceAmount: 799,
+    },
+    // Owned by the "mark paid" spec — nothing else may mutate this member.
+    {
+        membershipId: 'membership-e2e-active-4',
+        clientUserId: 'e2e-client-roster-4',
+        gymOrgId: E2E_GYM_ID,
+        status: 'ACTIVE',
+        checkInBlocked: false,
+        assignedTrainerId: null,
+        clientName: 'Vikram Rao',
+        clientEmail: 'vikram@example.com',
+        clientPhone: '+919876500004',
+        joinedAt: '2026-08-05T12:00:00.000Z',
+        leftAt: null,
+        basePaymentStatus: 'unpaid',
+        baseAmountPaid: 0,
+        basePriceAmount: 1200,
+    },
+    // Owned by the "part payment" spec — nothing else may mutate this member.
+    {
+        membershipId: 'membership-e2e-active-5',
+        clientUserId: 'e2e-client-roster-5',
+        gymOrgId: E2E_GYM_ID,
+        status: 'ACTIVE',
+        checkInBlocked: false,
+        assignedTrainerId: null,
+        clientName: 'Neha Iyer',
+        clientEmail: 'neha@example.com',
+        clientPhone: '+919876500005',
+        joinedAt: '2026-08-05T12:00:00.000Z',
+        leftAt: null,
+        basePaymentStatus: 'unpaid',
+        baseAmountPaid: 0,
+        basePriceAmount: 2000,
     },
 ]);
 
@@ -193,6 +269,83 @@ export const e2eRenewals = e2eShared('renewals', (): RenewalDueItem[] => [
         createdAt: '2026-08-08T12:00:00.000Z',
         updatedAt: '2026-08-11T10:00:00.000Z',
         clientUserId: 'e2e-client-roster-1',
+    },
+    // One line per payment status, all inside the default "next 7 days" window,
+    // so the desk's payment filters and money strip have something to separate.
+    {
+        id: 'sub-e2e-renewal-2',
+        clientMembershipId: 'membership-e2e-active-2',
+        gymOrgId: E2E_GYM_ID,
+        planId: 'plan-e2e-base',
+        kind: 'BASE',
+        capability: null,
+        priceAmount: 1499,
+        durationDays: 30,
+        startDate: isoDateOffset(-25),
+        endDate: isoDateOffset(5),
+        startSource: 'FIRST_ATTENDANCE',
+        paymentStatus: 'partial',
+        amountPaid: 500,
+        createdAt: '2026-08-06T12:00:00.000Z',
+        updatedAt: '2026-08-11T10:00:00.000Z',
+        clientUserId: 'e2e-client-roster-2',
+    },
+    {
+        id: 'sub-e2e-renewal-3',
+        clientMembershipId: 'membership-e2e-active-3',
+        gymOrgId: E2E_GYM_ID,
+        planId: 'plan-e2e-addon',
+        kind: 'ADDON',
+        capability: 'PERSONAL_TRAINING',
+        priceAmount: 799,
+        durationDays: 30,
+        startDate: isoDateOffset(-24),
+        endDate: isoDateOffset(6),
+        startSource: 'FIRST_ATTENDANCE',
+        paymentStatus: 'paid',
+        amountPaid: 799,
+        createdAt: '2026-08-04T12:00:00.000Z',
+        updatedAt: '2026-08-11T10:00:00.000Z',
+        clientUserId: 'e2e-client-roster-3',
+    },
+    // The two rows below are each owned by one mutating spec. Prices stay fixed
+    // whatever those specs do to `paymentStatus`, which is why the money strip
+    // asserts on "Billed" and not on "Collected".
+    {
+        id: 'sub-e2e-renewal-4',
+        clientMembershipId: 'membership-e2e-active-4',
+        gymOrgId: E2E_GYM_ID,
+        planId: 'plan-e2e-base',
+        kind: 'BASE',
+        capability: null,
+        priceAmount: 1200,
+        durationDays: 30,
+        startDate: isoDateOffset(-27),
+        endDate: isoDateOffset(3),
+        startSource: 'FIRST_ATTENDANCE',
+        paymentStatus: 'unpaid',
+        amountPaid: 0,
+        createdAt: '2026-08-05T12:00:00.000Z',
+        updatedAt: '2026-08-11T10:00:00.000Z',
+        clientUserId: 'e2e-client-roster-4',
+    },
+    {
+        id: 'sub-e2e-renewal-5',
+        clientMembershipId: 'membership-e2e-active-5',
+        gymOrgId: E2E_GYM_ID,
+        planId: 'plan-e2e-base',
+        kind: 'BASE',
+        capability: null,
+        priceAmount: 2000,
+        durationDays: 30,
+        startDate: isoDateOffset(-26),
+        endDate: isoDateOffset(4),
+        startSource: 'FIRST_ATTENDANCE',
+        paymentStatus: 'unpaid',
+        amountPaid: 0,
+        createdAt: '2026-08-05T12:00:00.000Z',
+        updatedAt: '2026-08-11T10:00:00.000Z',
+        clientUserId: 'e2e-client-roster-5',
     },
 ]);
 

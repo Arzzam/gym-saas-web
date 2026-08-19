@@ -15,6 +15,16 @@ export function createListRenewalsDue(deps: { subscriptions: SubscriptionsReader
     };
 }
 
+export function createListClientSubscriptions(deps: { subscriptions: SubscriptionsReader }) {
+    return async function listClientSubscriptions(input: {
+        accessToken: string;
+        gymOrgId: string;
+        clientUserId: string;
+    }) {
+        return deps.subscriptions.listClientSubscriptions(input);
+    };
+}
+
 export function createUpdateSubscriptionPayment(deps: { subscriptions: SubscriptionsWriter }) {
     return async function updateSubscriptionPayment(input: {
         accessToken: string;
