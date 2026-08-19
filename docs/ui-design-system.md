@@ -152,6 +152,7 @@ logic**, so a second module adopts it by passing different children, never by co
 | `WorkQueueSkeleton` | The one Suspense fallback for all of them |
 | `ContactActions` | `tel:` / WhatsApp / `mailto:` for whoever the rail is about |
 | `ErrorNotice` | Panel-level failure banner |
+| `ConfirmActionDialog` | The confirm step for anything destructive (§10) |
 
 Rules:
 
@@ -171,13 +172,37 @@ Rules:
 
 ### Which screens get it
 
-Adopt it when the screen's job is *work through a list of people*: renewals, the CRM
-pipeline, the attendance desk. **Do not force it onto a catalog or a settings list** —
-plans, invites and the roster are correct as tables, and §2 already prefers a table over
-cards-for-everything. A rail with nothing to put in it is worse than no rail.
+**Every Admin ops screen now does**: renewals, CRM, the attendance desk, the members desk
+(roster + invites) and the plan catalog. Settings is not an ops screen and keeps its
+forms.
 
-Where there is no per-row detail, the row itself can be the action — the attendance desk
-marks a member in on row click rather than opening anything.
+An earlier version of this section said the opposite — that plans and the roster were
+"correct as tables" and a rail would have nothing to put in it. That was wrong twice, and
+the reason is worth keeping:
+
+- A **member** has contact details, a join date and real subscription lines. The
+  four-column table hid all of it, so the page could not answer "what is this member
+  paying for?".
+- A **plan** has three editable fields — name, term, price — that `updatePlan` supported
+  from the start and no screen ever exposed. The rail did not restyle the catalog; it
+  unlocked writes that were unreachable.
+
+So the test is **not** "is the queue made of people". It is: *does an item have more to it
+than the row shows, or actions the row cannot hold?* If yes, it earns a rail. An **invite**
+genuinely does not have much — a name, a plan, a deadline — and its rail says so plainly
+rather than padding itself out. That is the honest version of "a rail with nothing in it
+is worse than no rail".
+
+Where there is no per-row detail at all, the row itself can be the action — the attendance
+desk marks a member in on row click rather than opening anything.
+
+### Two queues on one desk
+
+The members desk shows members *or* invites behind a `SegmentedFilter`. They stay separate
+query keys, because they are mutated independently and a check-in block must not refetch
+invites; they share a queue because an Admin looking for a person should not have to know
+which list that person is currently in. Reach for this only when the two populations
+answer the same question — not to save a route.
 
 ## 7. Filters — which ones navigate
 

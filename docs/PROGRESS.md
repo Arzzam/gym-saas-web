@@ -10,7 +10,7 @@ Living project stage for agents and humans. Log entries live one-per-file in `do
 | Tooling + CI | Done — Prettier/ESLint architecture rules/Husky/lint-staged + GitHub Actions (ADR-0006); `typecheck` runs `next typegen` first so `LayoutProps` exists on a clean CI checkout |
 | Folder architecture | Done — top-level `modules/<module>/`; `lib/` is shared infrastructure (ADR-0007, ADR-0008). E2E fixtures split into `lib/api/e2e/store.ts` (shared state) + nine per-module fakes, closing ADR-0007's last deferred consequence — no shared-file hotspots remain |
 | UI foundation | Done — shadcn/ui on `data-theme`, tokens aliased to the CRM palette (ADR-0006) |
-| Admin desk layout (queue + rail) | Done — `components/admin/` chrome (`work-queue-layout`, `metric-strip`, `segmented-filter`, `work-queue-skeleton`, `contact-actions`, `error-notice`), domain-free, landing the `stash@{3}` hybrid prototype as real code. Adopted by **renewals, CRM and the attendance desk**; roster, plans and the invite lists stay tables on purpose (§6). Fully token-indirected, so dark mode needed no per-component work. Colour palette still deferred by design |
+| Admin desk layout (queue + rail) | Done — `components/admin/` chrome (`work-queue-layout`, `metric-strip`, `segmented-filter`, `work-queue-skeleton`, `contact-actions`, `error-notice`, `confirm-action-dialog`), domain-free, landing the `stash@{3}` hybrid prototype as real code. Adopted by **every Admin ops screen**: renewals, CRM, attendance, members (roster + invites) and the plan catalog. Settings keeps its forms. Fully token-indirected, so dark mode needed no per-component work. Colour palette still deferred by design |
 | Architecture plan + SOLID/DI | Done (ADR-0003, ADR-0004) |
 | Matt Pocock skills | Done (`.agents/skills`) |
 | Postman API collection | Done — **sibling clone + Postman cloud** (`gym-saas.code-workspace`; no vendored `postman/` in web) |
@@ -59,7 +59,11 @@ Living project stage for agents and humans. Log entries live one-per-file in `do
     rather than "cannot be undone". Also fixed a false-passing spec: Base UI hides the
     page behind an open dialog from the a11y tree, so `toHaveCount(0)` on a row was
     measuring the dialog, not the delete.
-11. Optional: confirm Google-lane `/auth/refresh` compatibility with an actual browser OAuth round-trip (curl-verified for OTP-lane on `2026-08-16`; Google-lane inferred, not directly hit).
+11. **Watch for E2E flakiness on a loaded machine** — one full run mid-session failed three
+    specs on timeouts (plans + CRM) that pass individually and passed on four subsequent
+    full runs. Assertions were not wrong; the run was ~60% slower. If it recurs in CI,
+    raise `expect` timeout or drop worker count rather than chasing the specs.
+12. Optional: confirm Google-lane `/auth/refresh` compatibility with an actual browser OAuth round-trip (curl-verified for OTP-lane on `2026-08-16`; Google-lane inferred, not directly hit).
 
 ## Log
 
