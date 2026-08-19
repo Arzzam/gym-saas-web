@@ -101,8 +101,10 @@ across `roster-panel`, `members-admin-panel`, `membership-invite-inbox`, and
 four, styled from `--color-success` / `--color-warning` the same way `destructive` is
 styled from `--color-danger`.
 
-Lead pipeline stages (§ above) are edited through a `<Select>`, not displayed as a status
-badge anywhere today, so they're intentionally untouched by this pass.
+Lead pipeline stages render through `leadStatusTone()` in `leads-labels.ts` — neutral for
+every stage except `CONVERTED`, plus `isLeadStageMuted()` for the reduced-emphasis `LOST`
+treatment. The CRM queue shows the stage as a `<Badge>`; the rail's `<Select>` is where it
+is changed.
 
 ## 4. Empty states
 
@@ -147,6 +149,9 @@ logic**, so a second module adopts it by passing different children, never by co
 | `WorkQueueRailPanel` / `WorkQueueRailSection` | The detail rail's surface and its blocks |
 | `MetricStrip` | The money/volume summary above the queue |
 | `SegmentedFilter` | Client-side narrowing (see §7) |
+| `WorkQueueSkeleton` | The one Suspense fallback for all of them |
+| `ContactActions` | `tel:` / WhatsApp / `mailto:` for whoever the rail is about |
+| `ErrorNotice` | Panel-level failure banner |
 
 Rules:
 
@@ -160,6 +165,19 @@ Rules:
   `ui-theme.mdc`'s "no loud glass" — decoration must not cost legibility on dense rows.
 - **The urgency dot uses `StatusTone`**, via `statusToneDotClass()` — never a bespoke
   colour, so a tone means the same thing on a dot as on a badge (§3).
+- **`onSelect` is optional.** A row with nothing to open must not render a focusable
+  full-row overlay — keyboard users would tab into it and get silence. Omitting it also
+  drops the hover cue, so an inert row does not promise a click.
+
+### Which screens get it
+
+Adopt it when the screen's job is *work through a list of people*: renewals, the CRM
+pipeline, the attendance desk. **Do not force it onto a catalog or a settings list** —
+plans, invites and the roster are correct as tables, and §2 already prefers a table over
+cards-for-everything. A rail with nothing to put in it is worse than no rail.
+
+Where there is no per-row detail, the row itself can be the action — the attendance desk
+marks a member in on row click rather than opening anything.
 
 ## 7. Filters — which ones navigate
 
@@ -184,3 +202,13 @@ boundary so they stay clickable while new data streams in (ADR-0009).
   goal, and Geist Mono gives a comma its own character cell — `₹6,497` renders as
   `₹6 , 497`. Tabular figures align the digits and leave the separator alone.
 - Never apply tabular figures to prose. "Ends in 5 days" is a sentence, not a column.
+
+## 9. Errors
+
+- **Panel-level** failure — an action or a list did not work: `ErrorNotice`. One banner,
+  one radius, and it renders nothing for a null message so callers need no guard.
+- **Field-level** failure — this input is invalid: an inline `<p role="alert">` beside the
+  control. Do not promote it to the panel banner; that separates the message from the
+  thing that caused it.
+- Copy stays calm and says what to do next (`error-handling.mdc`). An expected-empty list
+  is never an error (§4).
