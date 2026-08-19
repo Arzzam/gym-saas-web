@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type SubmitEvent } from 'react';
+import { ConfirmActionDialog } from '@/components/admin/confirm-action-dialog';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -144,15 +145,16 @@ export function StaffInvitesAdminPanel({ gymName }: StaffInvitesAdminPanelProps)
                                     </p>
                                 </div>
                                 {invite.status === 'PENDING' ? (
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        className="shrink-0 text-xs"
+                                    <ConfirmActionDialog
+                                        trigger={<Button type="button" variant="ghost" className="shrink-0 text-xs" />}
+                                        title={`Revoke this ${staffInviteRoleLabel(invite.targetRole)} invite?`}
+                                        description="The invite stops working immediately and the staff member can no longer accept it. You can issue a fresh invite to the same staff code afterwards."
+                                        confirmLabel="Revoke invite"
                                         disabled={isPending}
-                                        onClick={() => handleRevoke(invite.id)}
+                                        onConfirm={() => handleRevoke(invite.id)}
                                     >
                                         Revoke
-                                    </Button>
+                                    </ConfirmActionDialog>
                                 ) : null}
                             </li>
                         ))}

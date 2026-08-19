@@ -2,6 +2,7 @@
 
 import { useState, type SubmitEvent } from 'react';
 
+import { ConfirmActionDialog } from '@/components/admin/confirm-action-dialog';
 import { ContactActions } from '@/components/admin/contact-actions';
 import { WorkQueueRailPanel, WorkQueueRailSection } from '@/components/admin/work-queue-layout';
 import { Badge } from '@/components/ui/badge';
@@ -91,15 +92,16 @@ export function LeadDetailRail({ row, onStatusChange, onDelete, rowActionsPendin
             <LeadEditForm key={lead.id} row={row} disabled={rowActionsPending} />
 
             <WorkQueueRailSection title="Danger zone">
-                <Button
-                    type="button"
-                    variant="destructive"
-                    className="w-full"
+                <ConfirmActionDialog
+                    trigger={<Button type="button" variant="destructive" className="w-full" />}
+                    title={`Delete ${lead.name}?`}
+                    description="The lead leaves the pipeline along with its notes and follow-up date. Capturing them again starts a blank record."
+                    confirmLabel="Delete lead"
                     disabled={rowActionsPending}
-                    onClick={() => onDelete(lead.id)}
+                    onConfirm={() => onDelete(lead.id)}
                 >
                     Delete lead
-                </Button>
+                </ConfirmActionDialog>
             </WorkQueueRailSection>
         </WorkQueueRailPanel>
     );

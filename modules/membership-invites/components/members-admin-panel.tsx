@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type SubmitEvent } from 'react';
+import { ConfirmActionDialog } from '@/components/admin/confirm-action-dialog';
 import { ErrorNotice } from '@/components/admin/error-notice';
 
 import { Badge } from '@/components/ui/badge';
@@ -263,14 +264,16 @@ export function MembersAdminPanel() {
                                         {membershipInviteStatusLabel(invite.status)}
                                     </Badge>
                                     {invite.status === 'PENDING' ? (
-                                        <Button
-                                            type="button"
-                                            variant="secondary"
+                                        <ConfirmActionDialog
+                                            trigger={<Button type="button" variant="secondary" />}
+                                            title={`Revoke the invite for ${invite.invitedEmail}?`}
+                                            description="Their invite link stops working immediately. You can send a fresh invite to the same address afterwards."
+                                            confirmLabel="Revoke invite"
                                             disabled={isPending}
-                                            onClick={() => handleRevoke(invite.id)}
+                                            onConfirm={() => handleRevoke(invite.id)}
                                         >
                                             Revoke
-                                        </Button>
+                                        </ConfirmActionDialog>
                                     ) : null}
                                 </div>
                             </li>

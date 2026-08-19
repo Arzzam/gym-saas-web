@@ -1,5 +1,6 @@
 'use client';
 
+import { ConfirmActionDialog } from '@/components/admin/confirm-action-dialog';
 import { ErrorNotice } from '@/components/admin/error-notice';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -95,24 +96,39 @@ export function RosterPanel() {
                                     </TableCell>
                                     <TableCell className="px-4 py-3 whitespace-normal">
                                         <div className="flex flex-wrap gap-2">
-                                            <Button
-                                                type="button"
-                                                variant="secondary"
+                                            {member.checkInBlocked ? (
+                                                // Unblocking restores access — nothing to confirm.
+                                                <Button
+                                                    type="button"
+                                                    variant="secondary"
+                                                    disabled={isPending}
+                                                    onClick={() => handleCheckInBlock(member.membershipId, false)}
+                                                >
+                                                    Unblock check-in
+                                                </Button>
+                                            ) : (
+                                                <ConfirmActionDialog
+                                                    trigger={<Button type="button" variant="secondary" />}
+                                                    title={`Block check-in for ${member.clientName}?`}
+                                                    description="They will be turned away at the desk even though their subscription dates are still valid. This is a manual override, not a billing consequence — you can unblock at any time."
+                                                    confirmLabel="Block check-in"
+                                                    destructive={false}
+                                                    disabled={isPending}
+                                                    onConfirm={() => handleCheckInBlock(member.membershipId, true)}
+                                                >
+                                                    Block check-in
+                                                </ConfirmActionDialog>
+                                            )}
+                                            <ConfirmActionDialog
+                                                trigger={<Button type="button" variant="secondary" />}
+                                                title={`Offboard ${member.clientName}?`}
+                                                description="They stop appearing on the roster and can no longer be marked in at the desk. Their attendance and billing history is kept."
+                                                confirmLabel="Offboard"
                                                 disabled={isPending}
-                                                onClick={() =>
-                                                    handleCheckInBlock(member.membershipId, !member.checkInBlocked)
-                                                }
-                                            >
-                                                {member.checkInBlocked ? 'Unblock check-in' : 'Block check-in'}
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                variant="secondary"
-                                                disabled={isPending}
-                                                onClick={() => handleOffboard(member.membershipId)}
+                                                onConfirm={() => handleOffboard(member.membershipId)}
                                             >
                                                 Offboard
-                                            </Button>
+                                            </ConfirmActionDialog>
                                         </div>
                                     </TableCell>
                                 </TableRow>

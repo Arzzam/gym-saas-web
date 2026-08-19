@@ -2,6 +2,7 @@
 
 import { useState, type SubmitEvent } from 'react';
 
+import { ConfirmActionDialog } from '@/components/admin/confirm-action-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -182,15 +183,16 @@ export function PlansAdminPanel({ gymName, kindFilter }: PlansAdminPanelProps) {
                                     >
                                         {plan.active ? 'Deactivate' : 'Activate'}
                                     </Button>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        className="text-xs"
+                                    <ConfirmActionDialog
+                                        trigger={<Button type="button" variant="ghost" className="text-xs" />}
+                                        title={`Delete ${plan.name}?`}
+                                        description="It leaves the catalog and can no longer be sold. Members already on this plan keep their subscription and the price they were charged."
+                                        confirmLabel="Delete plan"
                                         disabled={isPending}
-                                        onClick={() => handleDelete(plan.id)}
+                                        onConfirm={() => handleDelete(plan.id)}
                                     >
                                         Delete
-                                    </Button>
+                                    </ConfirmActionDialog>
                                 </div>
                             </li>
                         ))}

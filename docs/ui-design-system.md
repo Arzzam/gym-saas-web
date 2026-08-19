@@ -212,3 +212,35 @@ boundary so they stay clickable while new data streams in (ADR-0009).
   thing that caused it.
 - Copy stays calm and says what to do next (`error-handling.mdc`). An expected-empty list
   is never an error (§4).
+
+## 10. Destructive actions
+
+Anything that cannot be undone from the UI goes through `ConfirmActionDialog`:
+offboarding a member, deleting a plan or a lead, revoking an invite, blocking a check-in.
+These write to the API immediately — there is nothing held back to reverse — and several
+sit inches from a button the Admin presses all day (Delete beside Deactivate in the plan
+catalog; Offboard beside Block check-in on the roster).
+
+**The copy is the feature.** `description` is required and must say what happens to the
+gym's data, in the Admin's terms:
+
+- **Do:** *"They stop appearing on the roster and can no longer be marked in at the desk.
+  Their attendance and billing history is kept."*
+- **Don't:** *"This action cannot be undone."* A generic warning teaches people to click
+  through it, which is worse than no dialog because it costs a click and buys nothing.
+
+`confirmLabel` repeats the verb — "Offboard", "Delete plan", never "OK". Cancel is listed
+first so the safe path is the one a hurried Enter takes.
+
+`destructive={false}` for reversible-but-serious actions. Blocking a check-in denies
+access today but is undone with one click tomorrow, so it asks without the red button.
+**Unblocking asks nothing** — restoring access needs no ceremony.
+
+### Testing them
+
+While this dialog is open, Base UI marks the rest of the page `aria-hidden`, so **every
+`getByRole` query against the page behind it returns nothing**. A spec that clicks Delete
+and then asserts `toHaveCount(0)` on the row passes whether or not the delete ever ran —
+it is measuring the open dialog. Go through `ConfirmDialog` (`e2e/pages/confirm-dialog.page.ts`),
+whose `confirm()` waits for the dialog to close before returning. Assert the cancel path
+too: an untested Cancel is an untested feature.

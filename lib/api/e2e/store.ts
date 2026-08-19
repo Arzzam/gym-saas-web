@@ -223,6 +223,24 @@ export const e2eRosterMembers = e2eShared('rosterMembers', (): RosterMember[] =>
         baseAmountPaid: 0,
         basePriceAmount: 1200,
     },
+    // Owned by the offboard spec. Has no renewal line, so removing them from
+    // the roster cannot move the renewals desk's money totals.
+    {
+        membershipId: 'membership-e2e-active-6',
+        clientUserId: 'e2e-client-roster-6',
+        gymOrgId: E2E_GYM_ID,
+        status: 'ACTIVE',
+        checkInBlocked: false,
+        assignedTrainerId: null,
+        clientName: 'Deepa Rao',
+        clientEmail: 'deepa@example.com',
+        clientPhone: '+919876500006',
+        joinedAt: '2026-08-03T12:00:00.000Z',
+        leftAt: null,
+        basePaymentStatus: 'paid',
+        baseAmountPaid: 999,
+        basePriceAmount: 999,
+    },
     // Owned by the "part payment" spec — nothing else may mutate this member.
     {
         membershipId: 'membership-e2e-active-5',

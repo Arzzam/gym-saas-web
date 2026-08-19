@@ -48,7 +48,12 @@ test.describe('Plan catalog', () => {
         await expect(plansPage.planRow(addon)).not.toContainText('Inactive');
     });
 
-    test('Admin can create and delete a plan instantly', async ({ staffAdmin, plansPage, page }) => {
+    test('Admin can create and delete a plan, after confirming', async ({
+        staffAdmin,
+        plansPage,
+        confirmDialog,
+        page,
+    }) => {
         await staffAdmin.moduleLink('Plans').click();
         await expect(page).toHaveURL(/\/admin\/plans/);
 
@@ -58,9 +63,16 @@ test.describe('Plan catalog', () => {
         const row = plansPage.planRow(name);
         await expect(row).toBeVisible();
 
-        // Delete removes the row immediately (useOptimistic) rather than
-        // waiting on a full-page refresh.
+        // Cancelling must leave the plan alone — this is the whole point of
+        // the confirm step, so it is asserted before the happy path.
         await plansPage.deleteButton(name).click();
+        await confirmDialog.expectTitle(`Delete ${name}?`);
+        await confirmDialog.cancel();
+        await expect(row).toBeVisible();
+
+        // Confirming removes the row optimistically, without a full reload.
+        await plansPage.deleteButton(name).click();
+        await confirmDialog.confirm('Delete plan');
         await expect(row).toHaveCount(0);
     });
 });

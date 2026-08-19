@@ -5,6 +5,7 @@ import { encodeStaffSessionCookie, encodeStaffSessionCookieNoGym } from './staff
 import { AdminShellPage } from '../pages/admin-shell.page';
 import { AttendancePage } from '../pages/attendance.page';
 import { ClientHomePage } from '../pages/client-home.page';
+import { ConfirmDialog } from '../pages/confirm-dialog.page';
 import { CrmPage } from '../pages/crm.page';
 import { LoginPage } from '../pages/login.page';
 import { MembersPage } from '../pages/members.page';
@@ -22,6 +23,7 @@ type Pages = {
     renewalsPage: RenewalsPage;
     crmPage: CrmPage;
     plansPage: PlansPage;
+    confirmDialog: ConfirmDialog;
 };
 
 type AuthFixtures = {
@@ -44,6 +46,10 @@ export const test = base.extend<Pages & AuthFixtures>({
 
     clientHomePage: async ({ page }, use) => {
         await use(new ClientHomePage(page));
+    },
+
+    confirmDialog: async ({ page }, use) => {
+        await use(new ConfirmDialog(page));
     },
 
     settingsPage: async ({ page }, use) => {

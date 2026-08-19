@@ -44,7 +44,7 @@ test.describe('CRM desk', () => {
         await expect(crmPage.page.getByText('No leads match this search')).toBeVisible();
     });
 
-    test('Admin can capture a lead, move its stage, and delete it', async ({ staffAdmin, crmPage }) => {
+    test('Admin can capture a lead, move its stage, and delete it', async ({ staffAdmin, crmPage, confirmDialog }) => {
         await staffAdmin.moduleLink('Leads').click();
 
         const name = 'E2E Capture Lead';
@@ -61,6 +61,7 @@ test.describe('CRM desk', () => {
         // Delete removes the row optimistically and leaves the rail on the
         // next lead rather than on a ghost.
         await crmPage.deleteButton.click();
+        await confirmDialog.confirm('Delete lead');
         await expect(crmPage.row(name)).toHaveCount(0);
         await expect(crmPage.rail).not.toContainText(name);
     });
