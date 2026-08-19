@@ -22,6 +22,22 @@ export function statusToneBadgeVariant(tone: StatusTone) {
     return TONE_BADGE_VARIANT[tone];
 }
 
+const TONE_DOT_CLASS: Record<StatusTone, string> = {
+    neutral: 'bg-(--color-fg-muted)',
+    positive: 'bg-(--color-success)',
+    warning: 'bg-(--color-warning)',
+    danger: 'bg-(--color-danger)',
+};
+
+/**
+ * Same scale as the badges, rendered as a queue-row urgency dot. Lives here
+ * rather than in the layout primitive so a tone can never mean one colour on a
+ * badge and another on a dot — retheming still touches only `crm-tokens.css`.
+ */
+export function statusToneDotClass(tone: StatusTone): string {
+    return TONE_DOT_CLASS[tone];
+}
+
 /**
  * Membership invites and staff invites share one enum shape
  * (`PENDING` | `ACCEPTED` | `REVOKED` | `EXPIRED`) and therefore one tone
