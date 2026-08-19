@@ -10,6 +10,7 @@ Living project stage for agents and humans. Log entries live one-per-file in `do
 | Tooling + CI | Done — Prettier/ESLint architecture rules/Husky/lint-staged + GitHub Actions (ADR-0006); `typecheck` runs `next typegen` first so `LayoutProps` exists on a clean CI checkout |
 | Folder architecture | Done — top-level `modules/<module>/`; `lib/` is shared infrastructure (ADR-0007, ADR-0008). E2E fixtures split into `lib/api/e2e/store.ts` (shared state) + nine per-module fakes, closing ADR-0007's last deferred consequence — no shared-file hotspots remain |
 | UI foundation | Done — shadcn/ui on `data-theme`, tokens aliased to the CRM palette (ADR-0006) |
+| Admin desk layout (queue + rail) | Done — `components/admin/work-queue-layout.tsx` + `metric-strip` + `segmented-filter`, domain-free chrome landing the `stash@{3}` hybrid prototype as real code. Renewals is the first consumer; roster/attendance/leads/plans can adopt it by passing children. Fully token-indirected, so dark mode needed no per-component work. Colour palette still deferred by design |
 | Architecture plan + SOLID/DI | Done (ADR-0003, ADR-0004) |
 | Matt Pocock skills | Done (`.agents/skills`) |
 | Postman API collection | Done — **sibling clone + Postman cloud** (`gym-saas.code-workspace`; no vendored `postman/` in web) |
@@ -24,7 +25,7 @@ Living project stage for agents and humans. Log entries live one-per-file in `do
 | Admin navigation latency | Done — page shells do no network work; `loading.tsx` per ops route; filter tabs are `<Link>` in the shell (was a raw `<a>` full-page reload) (ADR-0009) |
 | Client data layer | Done — **TanStack Query v5** across all six Admin modules (ADR-0011): RSC `prefetchQuery` + `<HydrationBoundary>` for first paint, `/api/*` route handlers for refetch, mutations wrapping the existing Server Actions so the auth→lane→tenant gate never moved. Retired all `*-data.tsx`, every `useOptimistic` block, and 18 of 22 `router.refresh()` sites. Navigation between ops screens now serves from cache instead of re-paying ~400ms per hop. CLIENT persona migrated too; the 4 remaining `router.refresh()` calls are session creation and Admin-shell-mode changes, which cache invalidation cannot re-render |
 
-**Summary:** Roster, attendance desk, renewals inbox, and client my-data-grants wired against Postman tip `91d4aba`. Plans + Leads + membership invites remain live. Agent OS repaired after the `e537810` rule drift; tooling + CI landed (ADR-0006). Domain slices live at top-level `modules/` (ADR-0008 amending ADR-0007). Admin shell rebuilt on Base UI's `Sidebar` primitive, replacing the hand-rolled collapsible nav. Admin navigation reworked to stream the page shell and stop reloading the document on filter clicks (ADR-0009).
+**Summary:** Roster, attendance desk, renewals inbox, and client my-data-grants wired against Postman tip `91d4aba`. Plans + Leads + membership invites remain live. Agent OS repaired after the `e537810` rule drift; tooling + CI landed (ADR-0006). Domain slices live at top-level `modules/` (ADR-0008 amending ADR-0007). Admin shell rebuilt on Base UI's `Sidebar` primitive, replacing the hand-rolled collapsible nav. Admin navigation reworked to stream the page shell and stop reloading the document on filter clicks (ADR-0009). Renewals rebuilt as the first consumer of a reusable queue + rail desk layout, with member names joined from the roster and contact actions on the rail.
 
 ## Next up
 
@@ -39,8 +40,16 @@ Living project stage for agents and humans. Log entries live one-per-file in `do
 
 6. Assign trainer / trainer list when Postman exposes a list endpoint.
 7. Deploy gym-backend with `GOOGLE_OAUTH_REDIRECT_ORIGINS` + Supabase redirect URL for web Google callback.
-8. Optional: deeper renewals UX (filters, member name join).
-9. Optional: confirm Google-lane `/auth/refresh` compatibility with an actual browser OAuth round-trip (curl-verified for OTP-lane on `2026-08-16`; Google-lane inferred, not directly hit).
+8. ~~Optional: deeper renewals UX (filters, member name join)~~ — **Done.** Rebuilt as a
+   queue + rail desk: roster join for names/phone/email (no new endpoint — the roster
+   rides along in the screen payload like the attendance desk), window/payment/search
+   filters, a money summary strip, `tel:`/WhatsApp/`mailto:` contact actions, and a real
+   amount input replacing the `price / 2` guess for partial payments. See
+   `docs/progress/2026-08-20-renewals-desk-work-queue-layout.md`.
+9. **Audit the other modules against the desk layout** — roster, attendance, leads, plans,
+   membership-invites, staff-invites, auth. Consistency within each module's current
+   scope; no scope expansion, no palette decisions.
+10. Optional: confirm Google-lane `/auth/refresh` compatibility with an actual browser OAuth round-trip (curl-verified for OTP-lane on `2026-08-16`; Google-lane inferred, not directly hit).
 
 ## Log
 

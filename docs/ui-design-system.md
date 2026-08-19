@@ -133,3 +133,54 @@ CLIENT-owned; the member choosing not to share is the system working correctly.
 - Admin chrome in `components/admin/`; module UI in `modules/<m>/components/`.
 - Loading: route-level `loading.tsx` + panel skeletons (ADR-0009). Skeletons mirror the
   real layout so nothing shifts; header placeholders are grey bars, never duplicated copy.
+
+## 6. Desk layout — queue + rail
+
+The shape for any screen whose job is *work through a list of people*. First consumer:
+the renewals desk. `components/admin/work-queue-layout.tsx` owns it and holds **no domain
+logic**, so a second module adopts it by passing different children, never by copying it.
+
+| Piece | Job |
+|---|---|
+| `WorkQueueLayout` | The grid: summary, toolbar, queue, sticky rail |
+| `WorkQueue` / `WorkQueueRow` | The skimmable list; row = urgency dot + title + meta + actions |
+| `WorkQueueRailPanel` / `WorkQueueRailSection` | The detail rail's surface and its blocks |
+| `MetricStrip` | The money/volume summary above the queue |
+| `SegmentedFilter` | Client-side narrowing (see §7) |
+
+Rules:
+
+- **Two columns at `lg`, stacked below it.** The rail scrolls into view on selection when
+  stacked, but a row must still be actionable on its own — the rail is context, never the
+  only place an action lives.
+- **The row is the record; the rail is the context.** Do not move a row's primary action
+  into the rail.
+- **Glass on the summary strip only.** `MetricStrip` may be translucent because it
+  summarises; the queue and rail stay solid. This is the concrete reading of
+  `ui-theme.mdc`'s "no loud glass" — decoration must not cost legibility on dense rows.
+- **The urgency dot uses `StatusTone`**, via `statusToneDotClass()` — never a bespoke
+  colour, so a tone means the same thing on a dot as on a badge (§3).
+
+## 7. Filters — which ones navigate
+
+Two kinds, and the difference is not cosmetic:
+
+| Filter changes… | Mechanism | Why |
+|---|---|---|
+| What the **server fetches** (a date window) | `FilterTabs` — real `<Link>` | It is a query parameter; it must re-run the fetch and belongs in the query key |
+| Only **which rows show** (status, search) | `SegmentedFilter` + `useShallowSearchParam` | Already in the query cache; a `<Link>` would re-run the page and its `prefetchQuery` per keystroke |
+
+Both end up in the URL, satisfying `state-management.mdc` §2 — the second uses
+`window.history.replaceState`, the documented Next.js shallow-routing escape hatch, so the
+link stays shareable without a round-trip. Filter controls live **above** the `<Suspense>`
+boundary so they stay clickable while new data streams in (ADR-0009).
+
+## 8. Numbers and money
+
+- Money renders through `formatMoney()` (`lib/ui/format-money.ts`) — `en-IN`, whole
+  rupees. The API returns price **snapshots**; format them, never recompute them
+  (`000-project-context.mdc`).
+- Columns of figures get `tabular-nums`, **not** `font-mono`. Alignment was always the
+  goal, and Geist Mono gives a comma its own character cell — `₹6,497` renders as
+  `₹6 , 497`. Tabular figures align the digits and leave the separator alone.
+- Never apply tabular figures to prose. "Ends in 5 days" is a sentence, not a column.
