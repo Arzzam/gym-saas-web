@@ -99,9 +99,14 @@ type WorkQueueRowProps = {
     /** Right-hand side: badges and per-row actions. Stays clickable over the row overlay. */
     trailing?: ReactNode;
     selected?: boolean;
-    onSelect: () => void;
+    /**
+     * Omit to make the row inert. A row with nothing to open must not render a
+     * focusable overlay that does nothing — keyboard users would tab into it
+     * and get silence.
+     */
+    onSelect?: () => void;
     /** Accessible name for the whole-row select control, e.g. "Open Ada Client". */
-    selectLabel: string;
+    selectLabel?: string;
 };
 
 export function WorkQueueRow({
@@ -117,7 +122,10 @@ export function WorkQueueRow({
         <li
             className={cn(
                 'relative transition',
-                selected ? 'bg-(--color-canvas-accent)' : 'hover:bg-(--color-canvas-accent)/50',
+                selected && 'bg-(--color-canvas-accent)',
+                // No hover cue on an inert row — it would promise a click that
+                // does nothing.
+                !selected && onSelect && 'hover:bg-(--color-canvas-accent)/50',
             )}
         >
             {/*
@@ -126,13 +134,15 @@ export function WorkQueueRow({
              * select control is an overlay behind the content, and only the
              * trailing actions re-enable pointer events above it.
              */}
-            <button
-                type="button"
-                onClick={onSelect}
-                aria-label={selectLabel}
-                aria-current={selected ? 'true' : undefined}
-                className="absolute inset-0 z-0 cursor-pointer rounded-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--color-accent)"
-            />
+            {onSelect ? (
+                <button
+                    type="button"
+                    onClick={onSelect}
+                    aria-label={selectLabel}
+                    aria-current={selected ? 'true' : undefined}
+                    className="absolute inset-0 z-0 cursor-pointer rounded-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--color-accent)"
+                />
+            ) : null}
             <div className="pointer-events-none relative z-10 flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 items-start gap-2.5">
                     <span

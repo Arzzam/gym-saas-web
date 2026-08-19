@@ -3,45 +3,32 @@ import type { Locator, Page } from '@playwright/test';
 export class AttendancePage {
     readonly page: Page;
     readonly heading: Locator;
-    readonly deskMarkHeading: Locator;
-    readonly memberSelect: Locator;
-    readonly markButton: Locator;
-    readonly todayHeading: Locator;
+    readonly search: Locator;
+    readonly queue: Locator;
+    readonly rows: Locator;
+    readonly rail: Locator;
+    readonly summary: Locator;
 
     constructor(page: Page) {
         this.page = page;
-        this.heading = page.getByRole('heading', {
-            name: 'Attendance',
-            exact: true,
-        });
-        this.deskMarkHeading = page.getByRole('heading', {
-            name: 'Desk mark',
-            exact: true,
-        });
-        this.memberSelect = page.getByLabel('Member', { exact: true });
-        this.markButton = page.getByRole('button', { name: 'Mark attendance' });
-        this.todayHeading = page.getByRole('heading', {
-            name: "Today's attendance",
-            exact: true,
-        });
+        this.heading = page.getByRole('heading', { name: 'Attendance', exact: true });
+        this.search = page.getByRole('searchbox', { name: 'Search members' });
+        this.queue = page.getByRole('list', { name: 'Members' });
+        this.rows = this.queue.getByRole('listitem');
+        this.rail = page.getByRole('complementary', { name: "Today's attendance" });
+        this.summary = page.getByRole('region', { name: 'Attendance summary' });
     }
 
     async goto() {
         await this.page.goto('/admin/attendance');
     }
 
-    /**
-     * `memberSelect` is a Base UI `Select` (role="combobox" trigger + a
-     * portalled role="listbox" popup) — not a native `<select>`, so callers
-     * open it and target the matching `role="option"` rather than using
-     * `selectOption()`.
-     */
-    memberOption(name: string): Locator {
-        return this.page.getByRole('option', { name });
+    memberRow(name: string): Locator {
+        return this.rows.filter({ hasText: name });
     }
 
-    async selectMember(name: string) {
-        await this.memberSelect.click();
-        await this.memberOption(name).click();
+    /** Search-to-act: type, then press Mark on the row. No dropdown, no submit. */
+    async markIn(name: string) {
+        await this.memberRow(name).getByRole('button', { name: 'Mark in' }).click();
     }
 }

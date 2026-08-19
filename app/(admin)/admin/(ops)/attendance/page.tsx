@@ -48,7 +48,8 @@ export default async function AttendancePage() {
             <div>
                 <h1 className="text-2xl font-semibold tracking-tight text-(--color-fg) md:text-3xl">Attendance</h1>
                 <p className="mt-2 max-w-2xl text-sm text-(--color-fg-muted)">
-                    Desk-mark members for today ({day}). Entitlement follows subscription dates, not payment status.
+                    Search for whoever is at the door and mark them in. Entitlement follows subscription dates, not
+                    payment status.
                 </p>
             </div>
 
