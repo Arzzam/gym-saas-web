@@ -165,10 +165,12 @@ export function WorkQueueRow({
 }
 
 /** A titled block inside the rail, so every consumer's rail stacks the same way. */
-export function WorkQueueRailSection({ title, children }: { title: string; children: ReactNode }) {
+export function WorkQueueRailSection({ title, children }: { title?: string; children: ReactNode }) {
     return (
         <section className="space-y-2">
-            <h3 className="text-xs font-medium tracking-wide text-(--color-fg-muted) uppercase">{title}</h3>
+            {title ? (
+                <h3 className="text-xs font-medium tracking-wide text-(--color-fg-muted) uppercase">{title}</h3>
+            ) : null}
             {children}
         </section>
     );

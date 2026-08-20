@@ -91,7 +91,7 @@ export function LeadDetailRail({ row, onStatusChange, onDelete, rowActionsPendin
                 lead's typed values when the selection moves. */}
             <LeadEditForm key={lead.id} row={row} disabled={rowActionsPending} />
 
-            <WorkQueueRailSection title="Danger zone">
+            <WorkQueueRailSection>
                 <ConfirmActionDialog
                     trigger={<Button type="button" variant="destructive" className="w-full" />}
                     title={`Delete ${lead.name}?`}

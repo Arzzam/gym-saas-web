@@ -83,7 +83,7 @@ export function InviteDetailRail({ row, planName, onRevoke, rowActionsPending }:
             </WorkQueueRailSection>
 
             {invite.status === 'PENDING' ? (
-                <WorkQueueRailSection title="Danger zone">
+                <WorkQueueRailSection>
                     <ConfirmActionDialog
                         trigger={<Button type="button" variant="destructive" className="w-full" />}
                         title={`Revoke the invite for ${invite.invitedEmail}?`}

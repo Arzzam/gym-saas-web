@@ -118,7 +118,7 @@ export function MemberDetailRail({ row, onSetCheckInBlock, onOffboard, rowAction
                 </p>
             </WorkQueueRailSection>
 
-            <WorkQueueRailSection title="Danger zone">
+            <WorkQueueRailSection>
                 <ConfirmActionDialog
                     trigger={<Button type="button" variant="destructive" className="w-full" />}
                     title={`Offboard ${member.clientName}?`}
