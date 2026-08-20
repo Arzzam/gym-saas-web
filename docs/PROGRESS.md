@@ -63,10 +63,17 @@ Living project stage for agents and humans. Log entries live one-per-file in `do
     rather than "cannot be undone". Also fixed a false-passing spec: Base UI hides the
     page behind an open dialog from the a11y tree, so `toHaveCount(0)` on a row was
     measuring the dialog, not the delete.
-11. **Watch for E2E flakiness on a loaded machine** — one full run mid-session failed three
-    specs on timeouts (plans + CRM) that pass individually and passed on four subsequent
-    full runs. Assertions were not wrong; the run was ~60% slower. If it recurs in CI,
-    raise `expect` timeout or drop worker count rather than chasing the specs.
+11. ~~Watch for E2E flakiness on a loaded machine~~ — **Done, and it was not the machine.**
+    Two real isolation bugs, both of which *report as timeouts* because a strict-mode
+    violation re-resolves the locator until the budget expires. (a) `captureTrigger` was a
+    non-`exact` `'Capture lead'`, which substring-matches the row overlay `Open E2E Capture
+    Lead` while the CRM spec's own lead exists — two elements, failed click. (b) Every
+    fixture minted ids from array length (`plan-e2e-${e2ePlans.length + 1}`); since workers
+    share one store, a create following another worker's delete reissued a **live** id, so
+    `findIndex` deleted the wrong row. Fixed with `exact` locators and `e2eNextId()`.
+    12 consecutive green runs at six workers. `playwright.config.ts` is unchanged — raising
+    the timeout would have fixed nothing and a lower worker count would have hidden it. See
+    `docs/progress/2026-08-21-e2e-flakiness-root-cause.md`.
 12. Optional: confirm Google-lane `/auth/refresh` compatibility with an actual browser OAuth round-trip (curl-verified for OTP-lane on `2026-08-16`; Google-lane inferred, not directly hit).
 
 ## Log
