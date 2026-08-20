@@ -20,7 +20,7 @@ Living project stage for agents and humans. Log entries live one-per-file in `do
 | MCP (Context7, Postman, GitHub, Supabase, Vercel, Playwright) | Configured + connected in Cursor |
 | Playwright E2E skill | Done — `.cursor/skills/playwright-e2e-testing` (from fugazi/test-automation-skills-agents) |
 | Next.js app scaffold | Done — App Router + Clean Arch ports/adapters (build green) |
-| Feature modules | M1 auth; M2 Settings-first + invites; **M3 membership invites + my-data-grants**; **M4 plans/addons**; **roster / attendance / renewals**; **M11 leads**. Destructive actions across every module are behind one confirm step |
+| Feature modules | M1 auth; M2 Settings-first + invites; **M3 membership invites + my-data-grants**; **M4 plans/addons**; **roster / attendance / renewals** incl. **trainer assignment**; **M11 leads**. Destructive actions across every module are behind one confirm step |
 | Admin CRM-light chrome | Done — Base UI `Sidebar` primitive (icon rail + `Sheet` mobile drawer + cookie-persisted state), light/dark tokens, Settings-only first-run; Client persona shares the same header atoms |
 | Admin navigation latency | Done — page shells do no network work; `loading.tsx` per ops route; filter tabs are `<Link>` in the shell (was a raw `<a>` full-page reload) (ADR-0009) |
 | Client data layer | Done — **TanStack Query v5** across all six Admin modules (ADR-0011): RSC `prefetchQuery` + `<HydrationBoundary>` for first paint, `/api/*` route handlers for refetch, mutations wrapping the existing Server Actions so the auth→lane→tenant gate never moved. Retired all `*-data.tsx`, every `useOptimistic` block, and 18 of 22 `router.refresh()` sites. Navigation between ops screens now serves from cache instead of re-paying ~400ms per hop. CLIENT persona migrated too; the 4 remaining `router.refresh()` calls are session creation and Admin-shell-mode changes, which cache invalidation cannot re-render |
@@ -38,7 +38,12 @@ Living project stage for agents and humans. Log entries live one-per-file in `do
 
 **Product:**
 
-6. Assign trainer / trainer list when Postman exposes a list endpoint.
+6. ~~Assign trainer / trainer list~~ — **Done.** `List Gym Trainers` + `Assign Trainer`
+   wired end to end: new `listTrainers` on the gym-orgs port, `assignTrainer` on the
+   roster writer, and a coach picker in the members rail. `assignedTrainerId` had been
+   parsed into `RosterMember` since the module landed and rendered nowhere. The API's
+   `COACHING_ADDON_REQUIRED` (422) is stated up front in the control and surfaced as plain
+   copy, not re-derived client-side. No unassign — the contract has no such request.
 7. Deploy gym-backend with `GOOGLE_OAUTH_REDIRECT_ORIGINS` + Supabase redirect URL for web Google callback.
 8. ~~Optional: deeper renewals UX (filters, member name join)~~ — **Done.** Rebuilt as a
    queue + rail desk: roster join for names/phone/email (no new endpoint — the roster
@@ -47,10 +52,9 @@ Living project stage for agents and humans. Log entries live one-per-file in `do
    amount input replacing the `price / 2` guess for partial payments. See
    `docs/progress/2026-08-20-renewals-desk-work-queue-layout.md`.
 9. ~~Audit the other modules against the desk layout~~ — **Done.** Only two modules wanted
-   it: CRM (every row rendered its own edit form) and the attendance desk (three
-   interactions to mark one person, no way to see who was already in). Roster, plans and
-   the invite lists stay tables — forcing a rail on them would break §2. Plus a
-   consistency pass: one `ErrorNotice`, one money formatter (`formatPlanPrice` was a
+   it *at the time*: CRM and the attendance desk. That call was later reversed for roster
+   and plans — see `2026-08-20-desk-layout-everywhere.md` and §6 — and the layout now
+   covers every ops screen. Plus a consistency pass: one `ErrorNotice`, one money formatter (`formatPlanPrice` was a
    byte-identical duplicate), and radii folded back onto the three-value scale. See
    `docs/progress/2026-08-20-desk-layout-module-audit.md`.
 10. ~~Guard the destructive actions~~ — **Done.** One `ConfirmActionDialog` across all six
