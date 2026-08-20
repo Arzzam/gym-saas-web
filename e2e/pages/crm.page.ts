@@ -16,7 +16,10 @@ export class CrmPage {
         this.heading = page.getByRole('heading', { name: 'Leads', exact: true });
         this.statusTabs = page.getByRole('navigation', { name: 'Filter leads by status' });
         this.search = page.getByRole('searchbox', { name: 'Search leads' });
-        this.captureTrigger = page.getByRole('button', { name: 'Capture lead' });
+        // `exact` is load-bearing: a row's overlay button is labelled `Open <name>`,
+        // and the capture spec's own lead is named "E2E Capture Lead" — a substring
+        // match resolves to both and fails the click on strict mode.
+        this.captureTrigger = page.getByRole('button', { name: 'Capture lead', exact: true });
         this.queue = page.getByRole('list', { name: 'Lead pipeline' });
         this.rows = this.queue.getByRole('listitem');
         this.rail = page.getByRole('complementary', { name: 'Selected lead' });
@@ -37,7 +40,7 @@ export class CrmPage {
 
     /** Selecting a row is what loads the rail — every detail action goes through here. */
     async selectRow(name: string) {
-        await this.queue.getByRole('button', { name: `Open ${name}` }).click();
+        await this.queue.getByRole('button', { name: `Open ${name}`, exact: true }).click();
     }
 
     /** Capture is a dialog now, not a permanent form above the pipeline. */
@@ -60,6 +63,6 @@ export class CrmPage {
     }
 
     get deleteButton(): Locator {
-        return this.rail.getByRole('button', { name: 'Delete lead' });
+        return this.rail.getByRole('button', { name: 'Delete lead', exact: true });
     }
 }

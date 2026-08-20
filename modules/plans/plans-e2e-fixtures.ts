@@ -4,7 +4,7 @@
  */
 import { ApiClientError } from '@/lib/api/errors';
 import type { MembershipPlan, PlansReader, PlansWriter } from '@/modules/plans/plans-ports';
-import { E2E_GYM_ID, e2ePlans } from '@/lib/api/e2e/store';
+import { E2E_GYM_ID, e2ePlans, e2eNextId } from '@/lib/api/e2e/store';
 
 export function createE2ePlansAdapter(): PlansReader & PlansWriter {
     return {
@@ -43,7 +43,7 @@ export function createE2ePlansAdapter(): PlansReader & PlansWriter {
 
         async create({ gymOrgId, body }) {
             const plan: MembershipPlan = {
-                id: `plan-e2e-${e2ePlans.length + 1}`,
+                id: e2eNextId('plan-e2e-new'),
                 gymOrgId,
                 name: body.name,
                 kind: body.kind,

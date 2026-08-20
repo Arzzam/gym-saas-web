@@ -41,6 +41,6 @@ export class RenewalsPage {
     }
 
     async selectRow(memberName: string) {
-        await this.queue.getByRole('button', { name: `Open ${memberName}` }).click();
+        await this.queue.getByRole('button', { name: `Open ${memberName}`, exact: true }).click();
     }
 }

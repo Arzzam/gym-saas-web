@@ -16,7 +16,7 @@ export class PlansPage {
         this.heading = page.getByRole('heading', { name: 'Plans', exact: true });
         this.kindTabs = page.getByRole('navigation', { name: 'Filter plans by kind' });
         this.search = page.getByRole('searchbox', { name: 'Search plans' });
-        this.createTrigger = page.getByRole('button', { name: 'New plan' });
+        this.createTrigger = page.getByRole('button', { name: 'New plan', exact: true });
         this.queue = page.getByRole('list', { name: 'Plan catalog' });
         this.rows = this.queue.getByRole('listitem');
         this.rail = page.getByRole('complementary', { name: 'Selected plan' });
@@ -37,7 +37,7 @@ export class PlansPage {
 
     /** Selecting a row is what loads the rail — every detail action goes through here. */
     async selectPlan(name: string) {
-        await this.queue.getByRole('button', { name: `Open ${name}` }).click();
+        await this.queue.getByRole('button', { name: `Open ${name}`, exact: true }).click();
     }
 
     /** Create is a dialog now, not a permanent form above the catalog. */

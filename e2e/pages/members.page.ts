@@ -16,7 +16,7 @@ export class MembersPage {
         this.heading = page.getByRole('heading', { name: 'Members', exact: true });
         this.scopeFilter = page.getByRole('group', { name: 'Show members or invites' });
         this.search = page.getByRole('searchbox', { name: 'Search members' });
-        this.inviteTrigger = page.getByRole('button', { name: 'Invite member' });
+        this.inviteTrigger = page.getByRole('button', { name: 'Invite member', exact: true });
         // `exact` matters: role-name matching is substring by default, and
         // "Members" is a prefix of "Membership invites".
         this.memberQueue = page.getByRole('list', { name: 'Members', exact: true });
@@ -62,6 +62,6 @@ export class MembersPage {
 
     /** Selecting a row is what loads the rail — every detail action goes through here. */
     async select(name: string) {
-        await this.page.getByRole('button', { name: `Open ${name}` }).click();
+        await this.page.getByRole('button', { name: `Open ${name}`, exact: true }).click();
     }
 }

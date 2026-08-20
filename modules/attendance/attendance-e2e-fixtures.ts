@@ -4,7 +4,7 @@
  */
 import { ApiClientError } from '@/lib/api/errors';
 import type { Attendance, AttendanceReader, AttendanceWriter } from '@/modules/attendance/attendance-ports';
-import { E2E_GYM_ID, e2eAttendances, e2eRosterMembers } from '@/lib/api/e2e/store';
+import { E2E_GYM_ID, e2eAttendances, e2eRosterMembers, e2eNextId } from '@/lib/api/e2e/store';
 
 export function createE2eAttendanceAdapter(): AttendanceReader & AttendanceWriter {
     return {
@@ -47,7 +47,7 @@ export function createE2eAttendanceAdapter(): AttendanceReader & AttendanceWrite
             }
             const day = new Date().toISOString().slice(0, 10);
             const attendance: Attendance = {
-                id: `attendance-e2e-${e2eAttendances.length + 1}`,
+                id: e2eNextId('attendance-e2e-new'),
                 clientUserId,
                 gymOrgId,
                 occurredAt: `${day}T10:00:00.000Z`,

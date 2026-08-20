@@ -4,7 +4,7 @@
  */
 import { ApiClientError } from '@/lib/api/errors';
 import type { Lead, LeadsReader, LeadsWriter } from '@/modules/leads/leads-ports';
-import { E2E_GYM_ID, e2eLeads } from '@/lib/api/e2e/store';
+import { E2E_GYM_ID, e2eLeads, e2eNextId } from '@/lib/api/e2e/store';
 
 export function createE2eLeadsAdapter(): LeadsReader & LeadsWriter {
     return {
@@ -57,7 +57,7 @@ export function createE2eLeadsAdapter(): LeadsReader & LeadsWriter {
 
         async create({ gymOrgId, body }) {
             const lead: Lead = {
-                id: `lead-e2e-${e2eLeads.length + 1}`,
+                id: e2eNextId('lead-e2e-new'),
                 gymOrgId,
                 name: body.name,
                 phone: body.phone,

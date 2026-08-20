@@ -51,6 +51,28 @@ export function e2eShared<T>(key: string, create: () => T): T {
     return store.get(key) as T;
 }
 
+/**
+ * Monotonic id source for fixture `create` calls.
+ *
+ * Ids used to be derived from the array length (`plan-e2e-${e2ePlans.length + 1}`).
+ * Playwright's workers share these arrays, so a create that followed another
+ * worker's delete handed out an id that was already live. Every later
+ * `findIndex((item) => item.id === id)` — update, softDelete — then resolved to
+ * whichever duplicate came first: one spec's delete removed another spec's row,
+ * and the row the spec was actually asserting on never went away. Serial runs
+ * hid it, because an id is only reused there once its holder is gone.
+ *
+ * A counter that only ever goes up cannot collide, however the arrays are
+ * mutated. Prefixes end in `-new` so a generated id can never equal a seeded
+ * one (`plan-e2e-base`, `lead-e2e-1`, ...).
+ */
+export function e2eNextId(prefix: string): string {
+    const counters = e2eShared('idCounters', () => new Map<string, number>());
+    const next = (counters.get(prefix) ?? 0) + 1;
+    counters.set(prefix, next);
+    return `${prefix}-${next}`;
+}
+
 /** Tokens that gained a gym via Accept Staff Invite in this process. */
 export const e2eAffiliatedTokens = e2eShared('affiliatedTokens', () => new Set<string>());
 /** Tokens that became gym owners via Create GymOrg in this process. */

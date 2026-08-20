@@ -9,7 +9,13 @@ import type {
     MembershipInvitesWriter,
     MyDataGrants,
 } from '@/modules/membership-invites/membership-invites-ports';
-import { E2E_GYM_ID, e2eDataGrantsByGym, e2eMembershipInvites, seedMembershipSideEffects } from '@/lib/api/e2e/store';
+import {
+    E2E_GYM_ID,
+    e2eDataGrantsByGym,
+    e2eMembershipInvites,
+    seedMembershipSideEffects,
+    e2eNextId,
+} from '@/lib/api/e2e/store';
 
 export function createE2eMembershipInvitesAdapter(): MembershipInvitesReader & MembershipInvitesWriter {
     return {
@@ -31,7 +37,7 @@ export function createE2eMembershipInvitesAdapter(): MembershipInvitesReader & M
 
         async create({ gymOrgId, body }) {
             const invite: MembershipInvite = {
-                id: `minvite-e2e-${e2eMembershipInvites.length + 1}`,
+                id: e2eNextId('minvite-e2e-new'),
                 gymOrgId,
                 invitedEmail: body.invitedEmail,
                 invitedUserId: null,

@@ -12,6 +12,7 @@ import {
     e2eAffiliatedTokens,
     e2eGymInvites,
     sampleInvite,
+    e2eNextId,
 } from '@/lib/api/e2e/store';
 
 export function createE2eStaffInvitesAdapter(): StaffInvitesReader & StaffInvitesWriter {
@@ -75,7 +76,7 @@ export function createE2eStaffInvitesAdapter(): StaffInvitesReader & StaffInvite
                 });
             }
             const invite = sampleInvite({
-                id: `invite-e2e-${e2eGymInvites.length + 1}`,
+                id: e2eNextId('invite-e2e-new'),
                 gymOrgId,
                 targetRole: body.targetRole,
                 status: 'PENDING',
