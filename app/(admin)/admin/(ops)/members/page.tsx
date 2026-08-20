@@ -3,6 +3,8 @@ import { Suspense } from 'react';
 
 import { getSession, isStaffSession } from '@/lib/auth/session';
 import { getQueryClient } from '@/lib/query/query-client';
+import { gymOrgsKeys } from '@/modules/gym-orgs/gym-orgs-query-keys';
+import { listGymTrainersForGym } from '@/modules/gym-orgs/gym-orgs-queries';
 import { listStaffGymOrgs } from '@/modules/gym-orgs/list-staff-gym-orgs';
 import { WorkQueueSkeleton } from '@/components/admin/work-queue-skeleton';
 import { membershipInvitesKeys } from '@/modules/membership-invites/membership-invites-query-keys';
@@ -13,9 +15,10 @@ import { rosterKeys } from '@/modules/roster/roster-query-keys';
 import { listActiveRosterForGym } from '@/modules/roster/roster-queries';
 
 /**
- * Invites and roster are prefetched in parallel but kept as **separate query
- * keys**: they are mutated independently, so a check-in block should not
- * refetch the invite list (and vice versa).
+ * Invites, roster and trainers are prefetched in parallel but kept as
+ * **separate query keys**: they are mutated independently, so a check-in block
+ * should not refetch the invite list (and vice versa), and the roster's
+ * optimistic writes stay a map over a plain `RosterMember[]`.
  */
 async function MembersWorkspace({ accessToken, scope }: { accessToken: string; scope: MemberScope }) {
     const gymOrgs = await listStaffGymOrgs(accessToken);
@@ -34,6 +37,12 @@ async function MembersWorkspace({ accessToken, scope }: { accessToken: string; s
         queryClient.prefetchQuery({
             queryKey: rosterKeys.active(),
             queryFn: () => listActiveRosterForGym({ accessToken, gymOrgId: gym.id }),
+        }),
+        // Trainers are needed by the rail's coach picker; prefetched so it
+        // paints with the member rather than fetching on first selection.
+        queryClient.prefetchQuery({
+            queryKey: gymOrgsKeys.trainers(),
+            queryFn: () => listGymTrainersForGym({ accessToken, gymOrgId: gym.id }),
         }),
     ]);
 

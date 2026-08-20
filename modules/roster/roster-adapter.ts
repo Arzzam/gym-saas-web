@@ -120,6 +120,17 @@ export function createRosterAdapter(http: HttpClient): RosterReader & RosterWrit
             };
         },
 
+        async assignTrainer({ accessToken, gymOrgId, membershipId, trainerProfileId }) {
+            const raw = await http.request<unknown>({
+                path: endpoints.gymOrgMemberAssignTrainer(gymOrgId, membershipId),
+                method: 'POST',
+                accessToken,
+                body: { trainerProfileId },
+            });
+            const parsed = membershipEnvelopeSchema.parse(raw);
+            return { membership: normalizeMembership(parsed.membership, gymOrgId) };
+        },
+
         async setCheckInBlock({ accessToken, gymOrgId, membershipId, blocked }) {
             const raw = await http.request<unknown>({
                 path: endpoints.gymOrgMemberCheckInBlock(gymOrgId, membershipId),

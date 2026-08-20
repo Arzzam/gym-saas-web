@@ -11,6 +11,7 @@
 import type { Attendance } from '@/modules/attendance/attendance-ports';
 import type { Lead } from '@/modules/leads/leads-ports';
 import type { MembershipInvite, MyDataGrants } from '@/modules/membership-invites/membership-invites-ports';
+import type { GymTrainer } from '@/modules/gym-orgs/gym-orgs-ports';
 import type { MembershipPlan } from '@/modules/plans/plans-ports';
 import type { RosterMember } from '@/modules/roster/roster-ports';
 import type { StaffInvite } from '@/modules/staff-invites/staff-invites-ports';
@@ -260,6 +261,34 @@ export const e2eRosterMembers = e2eShared('rosterMembers', (): RosterMember[] =>
     },
 ]);
 
+/**
+ * Gym staff who can coach. `trainerProfileId` is what a membership's
+ * `assignedTrainerId` holds — deliberately different from `userId`, as in the
+ * real contract, so a spec that confuses the two fails here rather than in prod.
+ */
+export const e2eGymTrainers = e2eShared('gymTrainers', (): GymTrainer[] => [
+    {
+        trainerProfileId: 'trainer-profile-e2e-1',
+        userId: 'e2e-user-trainer-1',
+        gymOrgId: E2E_GYM_ID,
+        name: 'Karan Coach',
+        email: 'karan@example.com',
+        staffCode: 'STAFF-K1',
+        bio: 'Strength',
+        isAdmin: false,
+    },
+    {
+        trainerProfileId: 'trainer-profile-e2e-2',
+        userId: 'e2e-user-trainer-2',
+        gymOrgId: E2E_GYM_ID,
+        name: 'Meera Coach',
+        email: 'meera@example.com',
+        staffCode: 'STAFF-M2',
+        bio: null,
+        isAdmin: false,
+    },
+]);
+
 export const e2eAttendances = e2eShared('attendances', (): Attendance[] => []);
 export const e2eDataGrantsByGym = e2eShared('dataGrantsByGym', () => new Map<string, MyDataGrants>());
 
@@ -314,7 +343,7 @@ export const e2eRenewals = e2eShared('renewals', (): RenewalDueItem[] => [
         gymOrgId: E2E_GYM_ID,
         planId: 'plan-e2e-addon',
         kind: 'ADDON',
-        capability: 'PERSONAL_TRAINING',
+        capability: 'TRAINER_COACHING',
         priceAmount: 799,
         durationDays: 30,
         startDate: isoDateOffset(-24),

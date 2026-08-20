@@ -38,6 +38,27 @@ const createSchema = z.object({
     gymOrg: createGymOrgDetailSchema,
 });
 
+const trainerSchema = z.object({
+    trainerProfileId: z.string().min(1),
+    userId: z.string().min(1),
+    gymOrgId: z.string().min(1).optional(),
+    name: z.string().min(1),
+    email: z.string().min(1),
+    staffCode: z.string().nullable().optional(),
+    bio: z.string().nullable().optional(),
+    isAdmin: z.boolean().optional(),
+});
+
+/** Paged envelope, unlike the flat `gymOrgs` list above. */
+const trainersSchema = z.object({
+    trainers: z.object({
+        items: z.array(trainerSchema),
+        total: z.number().optional(),
+        limit: z.number().optional(),
+        offset: z.number().optional(),
+    }),
+});
+
 export function createGymOrgsAdapter(http: HttpClient): GymOrgsReader & GymOrgsWriter {
     return {
         async list({ accessToken }) {
@@ -47,6 +68,27 @@ export function createGymOrgsAdapter(http: HttpClient): GymOrgsReader & GymOrgsW
                 accessToken,
             });
             return listSchema.parse(raw);
+        },
+
+        async listTrainers({ accessToken, gymOrgId, limit = 50, offset = 0 }) {
+            const raw = await http.request<unknown>({
+                path: `${endpoints.gymOrgTrainers(gymOrgId)}?limit=${limit}&offset=${offset}`,
+                method: 'GET',
+                accessToken,
+            });
+            const parsed = trainersSchema.parse(raw);
+            return {
+                trainers: parsed.trainers.items.map((item) => ({
+                    trainerProfileId: item.trainerProfileId,
+                    userId: item.userId,
+                    gymOrgId: item.gymOrgId ?? gymOrgId,
+                    name: item.name,
+                    email: item.email,
+                    staffCode: item.staffCode ?? null,
+                    bio: item.bio ?? null,
+                    isAdmin: item.isAdmin ?? false,
+                })),
+            };
         },
 
         async create({ accessToken, body }) {

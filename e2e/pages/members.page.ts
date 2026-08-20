@@ -42,6 +42,24 @@ export class MembersPage {
         return this.inviteQueue.getByRole('listitem').filter({ hasText: name });
     }
 
+    coachSelect(memberName: string): Locator {
+        return this.rail.getByRole('combobox', { name: `Coach for ${memberName}` });
+    }
+
+    get assignCoachButton(): Locator {
+        return this.rail.getByRole('button', { name: /Assign coach|Change coach/ });
+    }
+
+    /**
+     * The coach `Select` is a Base UI combobox: the trigger sits in the rail but
+     * its popup is portalled to the document, so the option click is scoped to
+     * the page rather than the rail.
+     */
+    async pickCoach(memberName: string, trainerName: string) {
+        await this.coachSelect(memberName).click();
+        await this.page.getByRole('option', { name: new RegExp(`^${trainerName}`) }).click();
+    }
+
     /** Selecting a row is what loads the rail — every detail action goes through here. */
     async select(name: string) {
         await this.page.getByRole('button', { name: `Open ${name}` }).click();

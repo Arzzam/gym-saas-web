@@ -17,6 +17,17 @@ export function createOffboardMember(deps: { roster: RosterWriter }) {
     };
 }
 
+export function createAssignTrainer(deps: { roster: RosterWriter }) {
+    return async function assignTrainer(input: {
+        accessToken: string;
+        gymOrgId: string;
+        membershipId: string;
+        trainerProfileId: string;
+    }) {
+        return deps.roster.assignTrainer(input);
+    };
+}
+
 export function createSetCheckInBlock(deps: { roster: RosterWriter }) {
     return async function setCheckInBlock(input: {
         accessToken: string;

@@ -11,6 +11,7 @@ import {
     membershipPaymentStatusTone,
 } from '@/modules/membership-invites/membership-invites-labels';
 import type { MemberRow } from '@/modules/roster/roster-desk';
+import { MemberCoachSection } from '@/modules/roster/components/member-coach-section';
 import { ClientSubscriptionLines } from '@/modules/subscriptions/components/client-subscription-lines';
 
 /**
@@ -81,6 +82,10 @@ export function MemberDetailRail({ row, onSetCheckInBlock, onOffboard, rowAction
             <WorkQueueRailSection title="Subscriptions">
                 <ClientSubscriptionLines clientUserId={member.clientUserId} />
             </WorkQueueRailSection>
+
+            {/* Keyed on the membership so the picker resets to this member's
+                coach instead of keeping the previous selection. */}
+            <MemberCoachSection key={member.membershipId} member={member} disabled={rowActionsPending} />
 
             <WorkQueueRailSection title="Check-in access">
                 {member.checkInBlocked ? (

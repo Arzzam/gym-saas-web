@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 
 import { getJson } from '@/lib/query/api-fetch';
-import { offboardMemberAction, setCheckInBlockAction } from '@/modules/roster/roster-actions';
+import { assignTrainerAction, offboardMemberAction, setCheckInBlockAction } from '@/modules/roster/roster-actions';
 import { rosterErrorMessage } from '@/modules/roster/roster-errors';
 import type { RosterMember } from '@/modules/roster/roster-ports';
 import { rosterKeys } from '@/modules/roster/roster-query-keys';
@@ -61,6 +61,26 @@ export function useSetCheckInBlock() {
             ),
         onError: (_error, _input, context) => rollback(queryClient, context),
         onSettled: () => queryClient.invalidateQueries({ queryKey: rosterKeys.all }),
+    });
+}
+
+/**
+ * Not optimistic. The API can refuse with `COACHING_ADDON_REQUIRED`, and
+ * showing the coach as assigned before the server agrees would tell the Admin
+ * a member is coached when they are not — the one thing this control exists to
+ * get right.
+ */
+export function useAssignTrainer() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (input: { membershipId: string; trainerProfileId: string }) => {
+            const result = await assignTrainerAction(input);
+            if (!result.ok) {
+                throw new Error(result.message);
+            }
+            return result;
+        },
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: rosterKeys.all }),
     });
 }
 

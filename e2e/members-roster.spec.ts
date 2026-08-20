@@ -67,6 +67,38 @@ test.describe('Members desk', () => {
         await expect(membersPage.memberRow('Vikram Rao').getByText('Blocked', { exact: true })).toHaveCount(0);
     });
 
+    test('a coach can be assigned to a member who holds the coaching add-on', async ({ staffAdmin, membersPage }) => {
+        await staffAdmin.moduleLink('Members').click();
+
+        // Priya is the only fixture member with an in-date TRAINER_COACHING
+        // add-on, which is exactly what the API requires.
+        await membersPage.search.fill('priya');
+        await membersPage.select('Priya Sharma');
+        await expect(membersPage.rail).toContainText('No coach assigned');
+
+        await membersPage.pickCoach('Priya Sharma', 'Karan Coach');
+        await membersPage.assignCoachButton.click();
+
+        await expect(membersPage.rail).toContainText('Karan Coach');
+        await expect(membersPage.rail).not.toContainText('No coach assigned');
+    });
+
+    test('assigning without the coaching add-on is refused, in plain words', async ({ staffAdmin, membersPage }) => {
+        await staffAdmin.moduleLink('Members').click();
+
+        // Rahul has a BASE line only, so the API answers 422.
+        await membersPage.search.fill('rahul');
+        await membersPage.select('Rahul Menon');
+
+        await membersPage.pickCoach('Rahul Menon', 'Meera Coach');
+        await membersPage.assignCoachButton.click();
+
+        // The API's rule, said in the Admin's terms rather than echoed raw.
+        await expect(membersPage.rail.getByRole('alert')).toContainText('Trainer coaching add-on');
+        // And the member is not shown as coached.
+        await expect(membersPage.rail).toContainText('No coach assigned');
+    });
+
     test('offboarding asks first, and cancelling leaves the member alone', async ({
         staffAdmin,
         membersPage,

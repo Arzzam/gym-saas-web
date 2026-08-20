@@ -7,7 +7,8 @@ import {
     membershipPaymentStatusLabel,
     membershipPaymentStatusTone,
 } from '@/modules/membership-invites/membership-invites-labels';
-import { planKindLabel } from '@/modules/plans/plans-labels';
+import { planCapabilityLabel, planKindLabel } from '@/modules/plans/plans-labels';
+import type { PlanCapability } from '@/modules/plans/plans-ports';
 import { useClientSubscriptions } from '@/modules/subscriptions/subscriptions-hooks';
 import { formatRenewalDue } from '@/modules/subscriptions/subscriptions-labels';
 import type { Subscription } from '@/modules/subscriptions/subscriptions-ports';
@@ -59,13 +60,24 @@ export function ClientSubscriptionLines({ clientUserId }: { clientUserId: string
     );
 }
 
+/**
+ * `Subscription.capability` is a loose string from the API, unlike a plan's
+ * typed `PlanCapability`. Route known values through the shared label so a
+ * subscription line and the plan catalog spell the same capability the same
+ * way; anything unrecognised is shown as sent rather than mangled by an ad-hoc
+ * transform.
+ */
+function capabilityLabel(capability: string): string {
+    return capability === 'TRAINER_COACHING' ? planCapabilityLabel(capability as PlanCapability) : capability;
+}
+
 function SubscriptionLine({ line }: { line: Subscription }) {
     return (
         <li className="flex items-center justify-between gap-3 rounded-(--radius-control) border border-(--color-border)/70 px-3 py-2">
             <div className="min-w-0">
                 <p className="truncate text-sm text-(--color-fg)">
                     {planKindLabel(line.kind)}
-                    {line.capability ? ` · ${line.capability.replace(/_/g, ' ').toLowerCase()}` : ''}
+                    {line.capability ? ` · ${capabilityLabel(line.capability)}` : ''}
                 </p>
                 <p className="text-xs text-(--color-fg-muted)">{formatRenewalDue(line.endDate)}</p>
             </div>

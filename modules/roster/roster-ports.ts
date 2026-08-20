@@ -52,6 +52,22 @@ export type RosterWriter = {
         membershipId: string;
     }) => Promise<{ membership: MembershipMutation }>;
 
+    /**
+     * Assign or change the member's coach. `trainerProfileId` is the trainer's
+     * profile id (`GymTrainer.trainerProfileId`), which is what
+     * `assignedTrainerId` holds — not their `userId`.
+     *
+     * The API rejects this with `COACHING_ADDON_REQUIRED` unless the member
+     * holds an in-date TRAINER_COACHING add-on. There is deliberately no
+     * unassign: the contract has no such request.
+     */
+    assignTrainer: (input: {
+        accessToken: string;
+        gymOrgId: string;
+        membershipId: string;
+        trainerProfileId: string;
+    }) => Promise<{ membership: MembershipMutation }>;
+
     setCheckInBlock: (input: {
         accessToken: string;
         gymOrgId: string;

@@ -8,6 +8,7 @@ import {
     E2E_GYM_ID,
     E2E_STAFF_TOKEN_WITH_GYM,
     e2eAffiliatedTokens,
+    e2eGymTrainers,
     e2eOwnerTokens,
 } from '@/lib/api/e2e/store';
 
@@ -30,6 +31,10 @@ export function createE2eGymOrgsAdapter(): GymOrgsReader & GymOrgsWriter {
                 };
             }
             return { gymOrgs: [] };
+        },
+
+        async listTrainers({ gymOrgId }) {
+            return { trainers: e2eGymTrainers.filter((trainer) => trainer.gymOrgId === gymOrgId) };
         },
 
         async create({ accessToken, body }) {
