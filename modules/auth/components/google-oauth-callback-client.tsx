@@ -130,11 +130,7 @@ export function GoogleOAuthCallbackClient() {
                     </div>
                     <fieldset>
                         <legend className="sr-only">Account type</legend>
-                        <RadioGroup
-                            name="lane"
-                            value={lane ?? undefined}
-                            onValueChange={(value) => setLane(value as AuthLane)}
-                        >
+                        <RadioGroup name="lane" value={lane} onValueChange={(value) => setLane(value as AuthLane)}>
                             <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-(--color-border) p-3 hover:bg-(--color-canvas)">
                                 <RadioGroupItem value="STAFF" className="mt-1" />
                                 <span>
