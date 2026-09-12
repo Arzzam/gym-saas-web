@@ -16,6 +16,7 @@ const leadSchema = z.object({
     gymOrgId: z.string().min(1).optional(),
     name: z.string().min(1),
     phone: z.string().min(1),
+    email: z.string().nullable().optional(),
     source: z.string().nullable().optional(),
     interest: z.string().nullable().optional(),
     notes: z.string().nullable().optional(),
@@ -66,6 +67,7 @@ function normalizeLead(raw: z.infer<typeof leadSchema>, gymOrgId: string): Lead 
         gymOrgId: raw.gymOrgId ?? gymOrgId,
         name: raw.name,
         phone: raw.phone,
+        email: raw.email ?? null,
         source: raw.source ?? null,
         interest: raw.interest ?? null,
         notes: raw.notes ?? null,
@@ -125,6 +127,9 @@ export function createLeadsAdapter(http: HttpClient): LeadsReader & LeadsWriter 
                 name: body.name,
                 phone: body.phone,
             };
+            if (body.email !== undefined) {
+                payload.email = body.email;
+            }
             if (body.source !== undefined) {
                 payload.source = body.source;
             }
@@ -154,6 +159,9 @@ export function createLeadsAdapter(http: HttpClient): LeadsReader & LeadsWriter 
             }
             if (body.phone !== undefined) {
                 payload.phone = body.phone;
+            }
+            if (body.email !== undefined) {
+                payload.email = body.email;
             }
             if (body.source !== undefined) {
                 payload.source = body.source;

@@ -62,9 +62,15 @@ async function requireStaffAdminGym(): Promise<
     return { ok: true, accessToken: session.accessToken, gymOrgId };
 }
 
+/** Blank means "no email on file", which is a legitimate state for a walk-in. */
+function normalizeEmail(raw: string | undefined): string | null {
+    return raw?.trim().toLowerCase() || null;
+}
+
 export async function createLeadAction(input: {
     name: string;
     phone: string;
+    email?: string;
     source?: string;
     interest?: string;
     notes?: string;
@@ -76,6 +82,7 @@ export async function createLeadAction(input: {
 
     const name = input.name.trim();
     const phone = input.phone.replace(/\D/g, '');
+    const email = normalizeEmail(input.email);
     if (name.length < 2) {
         return {
             ok: false,
@@ -90,6 +97,13 @@ export async function createLeadAction(input: {
             message: 'Enter a valid phone number.',
         };
     }
+    if (email && !email.includes('@')) {
+        return {
+            ok: false,
+            code: 'VALIDATION_ERROR',
+            message: 'Enter a valid email, or leave it blank.',
+        };
+    }
 
     try {
         const { createLead } = createAppServices();
@@ -99,6 +113,7 @@ export async function createLeadAction(input: {
             body: {
                 name,
                 phone,
+                email,
                 source: input.source?.trim() || null,
                 interest: input.interest?.trim() || null,
                 notes: input.notes?.trim() || null,
@@ -119,6 +134,7 @@ export async function updateLeadAction(input: {
     leadId: string;
     name: string;
     phone: string;
+    email?: string;
     source?: string;
     interest?: string;
     notes?: string;
@@ -131,6 +147,7 @@ export async function updateLeadAction(input: {
 
     const name = input.name.trim();
     const phone = input.phone.replace(/\D/g, '');
+    const email = normalizeEmail(input.email);
     if (name.length < 2) {
         return {
             ok: false,
@@ -145,6 +162,13 @@ export async function updateLeadAction(input: {
             message: 'Enter a valid phone number.',
         };
     }
+    if (email && !email.includes('@')) {
+        return {
+            ok: false,
+            code: 'VALIDATION_ERROR',
+            message: 'Enter a valid email, or leave it blank.',
+        };
+    }
 
     try {
         const { updateLead } = createAppServices();
@@ -155,6 +179,7 @@ export async function updateLeadAction(input: {
             body: {
                 name,
                 phone,
+                email,
                 source: input.source?.trim() || null,
                 interest: input.interest?.trim() || null,
                 notes: input.notes?.trim() || null,

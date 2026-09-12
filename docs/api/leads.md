@@ -20,6 +20,7 @@ Contract from Postman **Leads** @ `7a2d9bf`.
 {
   "name": "Walk-in Prospect",
   "phone": "9876543210",
+  "email": "prospect@example.com",
   "source": "walk-in",
   "interest": "trial",
   "notes": null
@@ -28,6 +29,8 @@ Contract from Postman **Leads** @ `7a2d9bf`.
 
 **201:** `{ lead, warnings }` — soft warn `DUPLICATE_OPEN_LEAD_PHONE` possible while still creating.  
 **Statuses:** `NEW` → `CONTACTED` → `TRIAL` → `CONVERTED` | `LOST` (any→any).  
-**followUpDate:** `YYYY-MM-DD` or `null` to clear.
+**followUpDate:** `YYYY-MM-DD` or `null` to clear.  
+**email:** nullable on the lead, settable on create and update. Optional for a walk-in, but it is
+what **Convert** falls back to — a lead without one has to be given an address at convert time.
 
 Web: `/admin/crm` — capture form, per-lead **Update** inputs (`PATCH …/leads/:leadId` for name/phone/source/interest/notes/followUpDate), status change, due follow-ups, delete.

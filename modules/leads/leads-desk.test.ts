@@ -18,6 +18,7 @@ function lead(overrides: Partial<Lead> = {}): Lead {
         gymOrgId: 'gym-1',
         name: 'Walk-in Prospect',
         phone: '9876543210',
+        email: null,
         source: 'walk-in',
         interest: 'trial',
         notes: null,

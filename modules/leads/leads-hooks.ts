@@ -62,6 +62,7 @@ export function useCreateLead() {
         mutationFn: async (input: {
             name: string;
             phone: string;
+            email?: string;
             source?: string;
             interest?: string;
             notes?: string;
@@ -84,6 +85,7 @@ export function useUpdateLead() {
             leadId: string;
             name: string;
             phone: string;
+            email?: string;
             source?: string;
             interest?: string;
             notes?: string;

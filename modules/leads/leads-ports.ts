@@ -7,6 +7,13 @@ export type Lead = {
     gymOrgId: string;
     name: string;
     phone: string;
+    /**
+     * Optional on a lead — a walk-in gives a phone, not always an address. It is
+     * what `Convert Lead` falls back to when the Admin does not override it, so a
+     * lead without one has to be given an email at convert time (422
+     * `LEAD_EMAIL_REQUIRED`).
+     */
+    email: string | null;
     source: string | null;
     interest: string | null;
     notes: string | null;
@@ -36,6 +43,7 @@ export type CreateLeadInput = {
     source?: string | null;
     interest?: string | null;
     notes?: string | null;
+    email?: string | null;
 };
 
 export type UpdateLeadInput = {
@@ -44,6 +52,7 @@ export type UpdateLeadInput = {
     source?: string | null;
     interest?: string | null;
     notes?: string | null;
+    email?: string | null;
     /** YYYY-MM-DD or null to clear; omit to keep. */
     followUpDate?: string | null;
 };

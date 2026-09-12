@@ -111,6 +111,7 @@ function LeadEditForm({ row, disabled }: { row: LeadRow; disabled: boolean }) {
     const { lead } = row;
     const [name, setName] = useState(lead.name);
     const [phone, setPhone] = useState(lead.phone);
+    const [email, setEmail] = useState(lead.email ?? '');
     const [source, setSource] = useState(lead.source ?? '');
     const [interest, setInterest] = useState(lead.interest ?? '');
     const [notes, setNotes] = useState(lead.notes ?? '');
@@ -129,6 +130,7 @@ function LeadEditForm({ row, disabled }: { row: LeadRow; disabled: boolean }) {
             leadId: lead.id,
             name,
             phone,
+            email,
             source,
             interest,
             notes,
@@ -155,6 +157,15 @@ function LeadEditForm({ row, disabled }: { row: LeadRow; disabled: boolean }) {
                             inputMode="tel"
                             value={phone}
                             onChange={(event) => setPhone(event.target.value)}
+                        />
+                    </RailField>
+                    {/* Where a membership invite would go if this lead converts. */}
+                    <RailField id={`lead-email-${lead.id}`} label="Email">
+                        <Input
+                            id={`lead-email-${lead.id}`}
+                            type="email"
+                            value={email}
+                            onChange={(event) => setEmail(event.target.value)}
                         />
                     </RailField>
                     <RailField id={`lead-followup-${lead.id}`} label="Follow-up date">

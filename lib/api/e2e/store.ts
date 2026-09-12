@@ -147,6 +147,9 @@ export const e2eLeads = e2eShared('leads', (): Lead[] => [
         gymOrgId: E2E_GYM_ID,
         name: 'Walk-in Prospect',
         phone: '9876543210',
+        // No email on purpose: the convert flow has to handle a lead that never
+        // gave one, which is the common walk-in case.
+        email: null,
         source: 'walk-in',
         interest: 'trial',
         notes: null,

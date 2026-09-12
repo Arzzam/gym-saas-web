@@ -50,6 +50,7 @@ export function LeadCaptureDialog() {
 function CaptureForm({ onDone }: { onDone: () => void }) {
     const [name, setName] = useState('');
     const [phone, setPhone] = useState('');
+    const [email, setEmail] = useState('');
     const [source, setSource] = useState('walk-in');
     const [interest, setInterest] = useState('trial');
     const [notes, setNotes] = useState('');
@@ -61,7 +62,7 @@ function CaptureForm({ onDone }: { onDone: () => void }) {
     function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault();
         createLead.mutate(
-            { name, phone, source, interest, notes: notes || undefined },
+            { name, phone, email: email || undefined, source, interest, notes: notes || undefined },
             // Closes only on success: a failed capture keeps the typed details
             // on screen with the reason, instead of losing a walk-in's number.
             { onSuccess: () => onDone() },
@@ -95,6 +96,19 @@ function CaptureForm({ onDone }: { onDone: () => void }) {
                         placeholder="9876543210"
                     />
                 </Field>
+                <div className="sm:col-span-2">
+                    {/* Optional here, but it is the address a membership invite
+                        goes to — capturing it now saves asking at convert time. */}
+                    <Field id="lead-email" label="Email" optional>
+                        <Input
+                            id="lead-email"
+                            type="email"
+                            value={email}
+                            onChange={(event) => setEmail(event.target.value)}
+                            placeholder="prospect@example.com"
+                        />
+                    </Field>
+                </div>
                 <Field id="lead-source" label="Source">
                     <Input id="lead-source" value={source} onChange={(event) => setSource(event.target.value)} />
                 </Field>

@@ -61,6 +61,7 @@ export function createE2eLeadsAdapter(): LeadsReader & LeadsWriter {
                 gymOrgId,
                 name: body.name,
                 phone: body.phone,
+                email: body.email ?? null,
                 source: body.source ?? null,
                 interest: body.interest ?? null,
                 notes: body.notes ?? null,
