@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type ReactNode } from 'react';
 
+import { RAIL_GRID_CLASS, type RailWidth } from '@/components/admin/rail-width';
 import { cn } from '@/lib/utils';
 import { statusToneDotClass, type StatusTone } from '@/lib/ui/status-tone';
 
@@ -34,6 +35,8 @@ type WorkQueueLayoutProps = {
     railLabel: string;
     /** Changing this scrolls the rail into view below `lg`. Pass the selected row's id. */
     selectedKey?: string | null;
+    /** See `RailWidth` — widen only for a rail that holds a form. */
+    railWidth?: RailWidth;
 };
 
 export function WorkQueueLayout({
@@ -43,6 +46,7 @@ export function WorkQueueLayout({
     rail,
     railLabel,
     selectedKey = null,
+    railWidth = 'default',
 }: WorkQueueLayoutProps) {
     const railRef = useRef<HTMLElement | null>(null);
     const previousKey = useRef<string | null>(selectedKey);
@@ -65,7 +69,7 @@ export function WorkQueueLayout({
         <div className="space-y-4">
             {summary}
             {toolbar}
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start">
+            <div className={cn('grid gap-4 lg:items-start', RAIL_GRID_CLASS[railWidth])}>
                 <div className="min-w-0">{queue}</div>
                 <aside
                     ref={railRef}
@@ -96,6 +100,14 @@ type WorkQueueRowProps = {
     tone: StatusTone;
     title: ReactNode;
     meta: ReactNode;
+    /**
+     * Aligned, non-interactive cells between the title block and `trailing`.
+     * A queue of comparable numbers — a price list — reads as columns; one of
+     * prose does not, so most consumers leave this empty. Give each cell a
+     * fixed width so the column aligns down the queue rather than ragging
+     * against whatever the neighbouring row happens to say.
+     */
+    columns?: ReactNode;
     /** Right-hand side: badges and per-row actions. Stays clickable over the row overlay. */
     trailing?: ReactNode;
     selected?: boolean;
@@ -113,6 +125,7 @@ export function WorkQueueRow({
     tone,
     title,
     meta,
+    columns,
     trailing,
     selected = false,
     onSelect,
@@ -154,6 +167,13 @@ export function WorkQueueRow({
                         <div className="mt-0.5 text-xs text-(--color-fg-muted)">{meta}</div>
                     </div>
                 </div>
+                {columns ? (
+                    // Inherits the wrapper's `pointer-events-none`: these are
+                    // read-only cells, so the select overlay keeps the click.
+                    <div className="flex shrink-0 items-center gap-4 text-xs text-(--color-fg-muted) tabular-nums">
+                        {columns}
+                    </div>
+                ) : null}
                 {trailing ? (
                     <div className="pointer-events-auto flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
                         {trailing}

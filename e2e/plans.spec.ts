@@ -36,8 +36,11 @@ test.describe('Plan catalog', () => {
     test('the catalog shows what a member would be sold', async ({ staffAdmin, plansPage }) => {
         await staffAdmin.moduleLink('Plans').click();
 
+        // Price and term are their own aligned columns now, not one joined
+        // phrase — assert the cells, not the punctuation between them.
         const monthly = plansPage.planRow('Monthly');
-        await expect(monthly).toContainText('₹999 · 30 days');
+        await expect(monthly).toContainText('₹999');
+        await expect(monthly).toContainText('30 days');
         await expect(monthly).toContainText('Membership');
         await expect(plansPage.planRow('PT Coaching')).toContainText('Trainer coaching');
     });
@@ -62,7 +65,8 @@ test.describe('Plan catalog', () => {
         await plansPage.rail.getByRole('button', { name: 'Save changes' }).click();
 
         // Optimistic: the row reflects the edit without a reload.
-        await expect(plansPage.planRow(renamed)).toContainText('₹2,099 · 60 days');
+        await expect(plansPage.planRow(renamed)).toContainText('₹2,099');
+        await expect(plansPage.planRow(renamed)).toContainText('60 days');
         await expect(plansPage.planRow(original)).toHaveCount(0);
 
         // Clean up after itself — the fixture store is shared.

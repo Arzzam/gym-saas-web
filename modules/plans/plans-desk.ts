@@ -12,8 +12,21 @@ import type { MembershipPlan } from '@/modules/plans/plans-ports';
 
 export type PlanRow = {
     plan: MembershipPlan;
-    /** What a member on this plan pays, and for how long. */
+    /** How long one term runs, e.g. "30 days". */
     termLabel: string;
+    /** What a member on this plan pays, e.g. "₹999". */
+    priceLabel: string;
+};
+
+/**
+ * Rendering is injected so this module stays pure — and stays two fields
+ * rather than one joined "₹999 · 30 days" string, because the catalog aligns
+ * price under price and term under term. A dot-joined phrase cannot be a
+ * column.
+ */
+export type PlanRowFormatters = {
+    term: (plan: MembershipPlan) => string;
+    price: (plan: MembershipPlan) => string;
 };
 
 /**
@@ -37,11 +50,10 @@ function byActiveThenName(a: PlanRow, b: PlanRow): number {
     return a.plan.name.localeCompare(b.plan.name);
 }
 
-export function buildPlanRows(
-    plans: readonly MembershipPlan[],
-    termLabel: (plan: MembershipPlan) => string,
-): PlanRow[] {
-    return plans.map((plan) => ({ plan, termLabel: termLabel(plan) })).sort(byActiveThenName);
+export function buildPlanRows(plans: readonly MembershipPlan[], format: PlanRowFormatters): PlanRow[] {
+    return plans
+        .map((plan) => ({ plan, termLabel: format.term(plan), priceLabel: format.price(plan) }))
+        .sort(byActiveThenName);
 }
 
 export function filterPlanRows(rows: readonly PlanRow[], query: string): PlanRow[] {

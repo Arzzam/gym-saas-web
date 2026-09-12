@@ -19,7 +19,10 @@ function plan(overrides: Partial<MembershipPlan> = {}): MembershipPlan {
     };
 }
 
-const term = (item: MembershipPlan) => `${item.price} / ${item.durationDays}d`;
+const format = {
+    term: (item: MembershipPlan) => `${item.durationDays}d`,
+    price: (item: MembershipPlan) => `${item.price} rupees`,
+};
 
 describe('planStatusTone', () => {
     it('treats a retired plan as neutral, not a warning', () => {
@@ -37,7 +40,7 @@ describe('buildPlanRows', () => {
                 plan({ id: 'retired', name: 'Aaa Retired', active: false }),
                 plan({ id: 'active', name: 'Zzz Active', active: true }),
             ],
-            term,
+            format,
         );
 
         // Alphabetically the retired one sorts first; availability wins.
@@ -45,19 +48,20 @@ describe('buildPlanRows', () => {
     });
 
     it('sorts alphabetically within a group', () => {
-        const rows = buildPlanRows([plan({ id: 'q', name: 'Quarterly' }), plan({ id: 'a', name: 'Annual' })], term);
+        const rows = buildPlanRows([plan({ id: 'q', name: 'Quarterly' }), plan({ id: 'a', name: 'Annual' })], format);
 
         expect(rows.map((row) => row.plan.id)).toEqual(['a', 'q']);
     });
 
-    it('renders the term through the formatter the caller supplies', () => {
-        const [row] = buildPlanRows([plan({ price: 1499, durationDays: 90 })], term);
-        expect(row.termLabel).toBe('1499 / 90d');
+    it('renders term and price through the formatters the caller supplies', () => {
+        const [row] = buildPlanRows([plan({ price: 1499, durationDays: 90 })], format);
+        expect(row.termLabel).toBe('90d');
+        expect(row.priceLabel).toBe('1499 rupees');
     });
 });
 
 describe('filterPlanRows', () => {
-    const rows = buildPlanRows([plan({ id: '1', name: 'Monthly' }), plan({ id: '2', name: 'PT Coaching' })], term);
+    const rows = buildPlanRows([plan({ id: '1', name: 'Monthly' }), plan({ id: '2', name: 'PT Coaching' })], format);
 
     it('matches a plan name case-insensitively', () => {
         expect(filterPlanRows(rows, 'pt CoAcH').map((row) => row.plan.id)).toEqual(['2']);
@@ -76,7 +80,7 @@ describe('summarizePlans', () => {
                 plan({ id: '2', kind: 'BASE', active: false }),
                 plan({ id: '3', kind: 'ADDON', capability: 'TRAINER_COACHING', active: true }),
             ],
-            term,
+            format,
         );
 
         expect(summarizePlans(rows)).toEqual({ total: 3, active: 2, memberships: 2, addons: 1 });

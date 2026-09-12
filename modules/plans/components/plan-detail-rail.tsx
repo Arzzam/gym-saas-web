@@ -84,9 +84,23 @@ export function PlanDetailRail({ row, kindFilter, onToggleActive, onDelete, rowA
                 </p>
             </WorkQueueRailSection>
 
-            <WorkQueueRailSection>
+            {/*
+             * Quiet, and fenced off by the rule above it. Retire is the action
+             * an Admin almost always wants; delete was the heaviest element on
+             * the page, and it is already behind a confirm dialog. The hairline
+             * also stops "Retiring hides it…" reading as a caption for this
+             * button — the two sat adjacent once "Danger zone" went away.
+             */}
+            <div className="border-t border-(--color-border)/70 pt-3">
                 <ConfirmActionDialog
-                    trigger={<Button type="button" variant="destructive" className="w-full" />}
+                    trigger={
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="text-(--color-danger) hover:bg-(--color-danger)/10 hover:text-(--color-danger)"
+                        />
+                    }
                     title={`Delete ${plan.name}?`}
                     description="It leaves the catalog and can no longer be sold. Members already on this plan keep their subscription and the price they were charged. Retiring it instead keeps it visible here."
                     confirmLabel="Delete plan"
@@ -95,7 +109,7 @@ export function PlanDetailRail({ row, kindFilter, onToggleActive, onDelete, rowA
                 >
                     Delete plan
                 </ConfirmActionDialog>
-            </WorkQueueRailSection>
+            </div>
         </WorkQueueRailPanel>
     );
 }

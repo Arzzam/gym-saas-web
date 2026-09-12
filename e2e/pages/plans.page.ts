@@ -9,7 +9,6 @@ export class PlansPage {
     readonly queue: Locator;
     readonly rows: Locator;
     readonly rail: Locator;
-    readonly summary: Locator;
 
     constructor(page: Page) {
         this.page = page;
@@ -20,7 +19,6 @@ export class PlansPage {
         this.queue = page.getByRole('list', { name: 'Plan catalog' });
         this.rows = this.queue.getByRole('listitem');
         this.rail = page.getByRole('complementary', { name: 'Selected plan' });
-        this.summary = page.getByRole('region', { name: 'Catalog summary' });
     }
 
     async goto() {

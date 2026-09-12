@@ -80,7 +80,15 @@ Living project stage for agents and humans. Log entries live one-per-file in `do
     12 consecutive green runs at six workers. `playwright.config.ts` is unchanged — raising
     the timeout would have fixed nothing and a lower worker count would have hidden it. See
     `docs/progress/2026-08-21-e2e-flakiness-root-cause.md`.
-13. Optional: confirm Google-lane `/auth/refresh` compatibility with an actual browser OAuth round-trip (curl-verified for OTP-lane on `2026-08-16`; Google-lane inferred, not directly hit).
+13. ~~The plan catalog read as "a small weird" layout~~ — **Done.** It was the one ops
+    screen the queue+rail template did not fit: a catalog has no urgency and no day to
+    summarise, so the metric strip restated its own two rows and the wide column held the
+    sparse content while the 21rem rail held the form. Metric strip → one muted line, rail
+    → `railWidth="wide"`, queue rows → real aligned term/price columns (`WorkQueueRow`
+    gained a `columns` slot), delete → quiet and fenced by a hairline. Shared chrome takes
+    both new options with today's behaviour as the default, so the other four desks are
+    untouched. See `docs/progress/2026-08-21-plans-catalog-proportions.md`.
+14. Optional: confirm Google-lane `/auth/refresh` compatibility with an actual browser OAuth round-trip (curl-verified for OTP-lane on `2026-08-16`; Google-lane inferred, not directly hit).
 
 ## Log
 
