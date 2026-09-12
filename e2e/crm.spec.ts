@@ -79,4 +79,62 @@ test.describe('CRM desk', () => {
         await expect(dialog).toHaveCount(0);
         await expect(crmPage.queue).toBeVisible();
     });
+
+    test('converting a lead creates a pending membership invite', async ({ staffAdmin, crmPage, membersPage }) => {
+        await staffAdmin.moduleLink('Leads').click();
+
+        const name = 'E2E Convert Lead';
+        await crmPage.captureLead(name, '9997776655', 'e2e-convert-lead@example.com');
+        await crmPage.selectRow(name);
+
+        await crmPage.convertLead({ plan: 'Monthly', payment: 'Paid', addon: 'PT Coaching' });
+
+        // The pipeline reflects it immediately — no unassign, so this is one-way.
+        await expect(crmPage.rail).toContainText('Converted');
+        await expect(crmPage.row(name).getByText('Converted', { exact: true })).toBeVisible();
+        await expect(crmPage.convertTrigger).toHaveCount(0);
+
+        // And a real invite exists for someone to accept — not just a label.
+        await staffAdmin.moduleLink('Members').click();
+        await membersPage.scope('Invites').click();
+        await expect(membersPage.inviteRow(name)).toBeVisible();
+        await expect(membersPage.inviteRow(name)).toContainText('e2e-convert-lead@example.com');
+    });
+
+    test('a lost lead cannot be converted, and the UI never offers it', async ({ staffAdmin, crmPage }) => {
+        await staffAdmin.moduleLink('Leads').click();
+
+        const name = 'E2E Lost Lead';
+        await crmPage.captureLead(name, '9995554433');
+        await crmPage.selectRow(name);
+        await crmPage.setStage(name, 'Lost');
+
+        // Not a post-submit error: the trigger the API would refuse is not there
+        // to click, the same way the members desk never asks for a coach it
+        // already knows the add-on rule will refuse.
+        await expect(crmPage.convertTrigger).toHaveCount(0);
+        await expect(crmPage.rail.getByText('A lost lead cannot be converted.')).toBeVisible();
+    });
+
+    test('converting a lead with no email on file requires one before it can submit', async ({
+        staffAdmin,
+        crmPage,
+    }) => {
+        await staffAdmin.moduleLink('Leads').click();
+
+        // The seeded lead has no email — exactly the case Convert has to handle.
+        await crmPage.selectRow('Walk-in Prospect');
+        await crmPage.convertTrigger.click();
+
+        const dialog = crmPage.page.getByRole('dialog');
+        await dialog.getByRole('combobox', { name: 'Membership', exact: true }).click();
+        await crmPage.page.getByRole('option', { name: 'Monthly', exact: true }).click();
+        await expect(dialog.getByRole('button', { name: 'Convert lead' })).toBeDisabled();
+
+        await dialog.getByLabel('Email', { exact: true }).fill('walkin@example.com');
+        await expect(dialog.getByRole('button', { name: 'Convert lead' })).toBeEnabled();
+
+        // Cancel rather than submit — this is a shared fixture other workers read.
+        await dialog.getByRole('button', { name: 'Cancel' }).click();
+    });
 });

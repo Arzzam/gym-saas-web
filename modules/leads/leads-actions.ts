@@ -7,6 +7,7 @@ import { ApiClientError } from '@/lib/api/errors';
 import { getSession } from '@/lib/auth/session';
 import { leadErrorMessage, leadWarningMessage } from '@/modules/leads/leads-errors';
 import type { LeadStatus } from '@/modules/leads/leads-ports';
+import type { MembershipPaymentStatus } from '@/modules/membership-invites/membership-invites-ports';
 
 export type LeadActionResult = { ok: true; warning?: string } | { ok: false; code: string; message: string };
 
@@ -213,6 +214,82 @@ export async function changeLeadStatusAction(input: { leadId: string; status: Le
         revalidatePath('/admin/crm');
         return { ok: true };
     } catch (error) {
+        return fail(error);
+    }
+}
+
+function isPaymentStatus(value: string): value is MembershipPaymentStatus {
+    return value === 'paid' || value === 'unpaid' || value === 'partial';
+}
+
+/**
+ * Create a membership invite from a lead. This is the only thing that may set a
+ * lead to `CONVERTED` — the stage picker no longer offers it, so a converted
+ * lead always has an invite behind it.
+ *
+ * Revalidates **both** desks: the lead's stage moves on `/admin/crm`, and the
+ * new PENDING invite belongs in the members desk's Invites queue.
+ */
+export async function convertLeadAction(input: {
+    leadId: string;
+    invitedEmail?: string;
+    basePlanId: string;
+    basePaymentStatus: string;
+    addonPlanId?: string;
+    addonPaymentStatus?: string;
+    expiresAt?: string;
+}): Promise<LeadActionResult> {
+    const gate = await requireStaffAdminGym();
+    if (!gate.ok) {
+        return gate.result;
+    }
+
+    const invitedEmail = normalizeEmail(input.invitedEmail);
+    const basePlanId = input.basePlanId.trim();
+    const addonPlanId = input.addonPlanId?.trim() ?? '';
+    const addonPaymentRaw = input.addonPaymentStatus?.trim() ?? '';
+
+    if (invitedEmail && !invitedEmail.includes('@')) {
+        return { ok: false, code: 'VALIDATION_ERROR', message: 'Enter a valid email for the invite.' };
+    }
+    if (!basePlanId) {
+        return { ok: false, code: 'VALIDATION_ERROR', message: 'Choose a Base plan.' };
+    }
+    if (!isPaymentStatus(input.basePaymentStatus)) {
+        return { ok: false, code: 'VALIDATION_ERROR', message: 'Choose a base payment status.' };
+    }
+    // The API rejects a half-set add-on; say so before spending a round trip.
+    const hasAddon = Boolean(addonPlanId) || Boolean(addonPaymentRaw);
+    if (hasAddon && !(addonPlanId && isPaymentStatus(addonPaymentRaw))) {
+        return {
+            ok: false,
+            code: 'VALIDATION_ERROR',
+            message: 'Add-on plan and payment status must both be set, or both left empty.',
+        };
+    }
+
+    try {
+        const { convertLead } = createAppServices();
+        await convertLead({
+            accessToken: gate.accessToken,
+            gymOrgId: gate.gymOrgId,
+            leadId: input.leadId,
+            body: {
+                ...(invitedEmail ? { invitedEmail } : {}),
+                basePlanId,
+                basePaymentStatus: input.basePaymentStatus,
+                ...(addonPlanId && isPaymentStatus(addonPaymentRaw)
+                    ? { addonPlanId, addonPaymentStatus: addonPaymentRaw }
+                    : {}),
+                ...(input.expiresAt ? { expiresAt: input.expiresAt } : {}),
+            },
+        });
+        revalidatePath('/admin/crm');
+        revalidatePath('/admin/members');
+        return { ok: true };
+    } catch (error) {
+        // Notably LEAD_ALREADY_CONVERTED (409), LEAD_EMAIL_REQUIRED and
+        // LEAD_NOT_CONVERTIBLE (422) — mapped to plain copy in `leads-errors.ts`.
         return fail(error);
     }
 }

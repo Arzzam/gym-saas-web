@@ -34,6 +34,14 @@ export function leadStatusLabel(status: LeadStatus): string {
 
 export const LEAD_STATUSES: ReadonlyArray<LeadStatus> = ['NEW', 'CONTACTED', 'TRIAL', 'CONVERTED', 'LOST'];
 
+/**
+ * Stages the rail's picker may set directly. `CONVERTED` is deliberately
+ * excluded: it is reachable only through `Convert lead`, which creates the
+ * membership invite the status alone does not. `LEAD_STATUSES` stays whole —
+ * the CRM's filter tabs still need to show and filter *for* converted leads.
+ */
+export const LEAD_STAGE_OPTIONS: ReadonlyArray<LeadStatus> = ['NEW', 'CONTACTED', 'TRIAL', 'LOST'];
+
 export function formatLeadFollowUp(date: string | null): string {
     if (!date) {
         return 'No follow-up';

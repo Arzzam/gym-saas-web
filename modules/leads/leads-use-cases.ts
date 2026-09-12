@@ -1,4 +1,5 @@
 import type {
+    ConvertLeadInput,
     CreateLeadInput,
     LeadStatus,
     LeadsReader,
@@ -43,6 +44,17 @@ export function createChangeLeadStatus(deps: { leads: LeadsWriter }) {
         status: LeadStatus;
     }) {
         return deps.leads.changeStatus(input);
+    };
+}
+
+export function createConvertLead(deps: { leads: LeadsWriter }) {
+    return async function convertLead(input: {
+        accessToken: string;
+        gymOrgId: string;
+        leadId: string;
+        body: ConvertLeadInput;
+    }) {
+        return deps.leads.convert(input);
     };
 }
 

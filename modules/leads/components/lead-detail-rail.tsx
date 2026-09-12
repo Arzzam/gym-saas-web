@@ -12,10 +12,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { statusToneBadgeVariant } from '@/lib/ui/status-tone';
 import { cn } from '@/lib/utils';
+import { LeadConvertDialog } from '@/modules/leads/components/lead-convert-dialog';
 import type { LeadRow } from '@/modules/leads/leads-desk';
 import { useUpdateLead } from '@/modules/leads/leads-hooks';
-import { isLeadStageMuted, LEAD_STATUSES, leadStatusLabel, leadStatusTone } from '@/modules/leads/leads-labels';
+import { isLeadStageMuted, LEAD_STAGE_OPTIONS, leadStatusLabel, leadStatusTone } from '@/modules/leads/leads-labels';
 import type { LeadStatus } from '@/modules/leads/leads-ports';
+import type { MembershipPlan } from '@/modules/plans/plans-ports';
 
 /**
  * Everything about one lead, in the rail.
@@ -32,12 +34,21 @@ import type { LeadStatus } from '@/modules/leads/leads-ports';
 
 type LeadDetailRailProps = {
     row: LeadRow | null;
+    basePlans: readonly MembershipPlan[];
+    addonPlans: readonly MembershipPlan[];
     onStatusChange: (leadId: string, status: LeadStatus) => void;
     onDelete: (leadId: string) => void;
     rowActionsPending: boolean;
 };
 
-export function LeadDetailRail({ row, onStatusChange, onDelete, rowActionsPending }: LeadDetailRailProps) {
+export function LeadDetailRail({
+    row,
+    basePlans,
+    addonPlans,
+    onStatusChange,
+    onDelete,
+    rowActionsPending,
+}: LeadDetailRailProps) {
     if (!row) {
         return (
             <WorkQueueRailPanel>
@@ -78,13 +89,22 @@ export function LeadDetailRail({ row, onStatusChange, onDelete, rowActionsPendin
                         <SelectValue>{(value: string) => leadStatusLabel(value as LeadStatus)}</SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                        {LEAD_STATUSES.map((status) => (
+                        {LEAD_STAGE_OPTIONS.map((status) => (
                             <SelectItem key={status} value={status}>
                                 {leadStatusLabel(status)}
                             </SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
+            </WorkQueueRailSection>
+
+            <WorkQueueRailSection title="Convert">
+                <LeadConvertDialog
+                    lead={lead}
+                    basePlans={basePlans}
+                    addonPlans={addonPlans}
+                    disabled={rowActionsPending}
+                />
             </WorkQueueRailSection>
 
             {/* Keyed on the lead: without this the form keeps the previous

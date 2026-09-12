@@ -6,4 +6,6 @@ export const endpoints = {
     gymOrgLeadStatus: (gymOrgId: string, leadId: string) =>
         `/gym-orgs/${encodeURIComponent(gymOrgId)}/leads/${encodeURIComponent(leadId)}/status`,
     gymOrgLeadDueFollowUps: (gymOrgId: string) => `/gym-orgs/${encodeURIComponent(gymOrgId)}/leads/due-follow-ups`,
+    gymOrgLeadConvert: (gymOrgId: string, leadId: string) =>
+        `/gym-orgs/${encodeURIComponent(gymOrgId)}/leads/${encodeURIComponent(leadId)}/convert`,
 } as const;

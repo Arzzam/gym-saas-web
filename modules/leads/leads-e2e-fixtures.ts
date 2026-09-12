@@ -4,7 +4,8 @@
  */
 import { ApiClientError } from '@/lib/api/errors';
 import type { Lead, LeadsReader, LeadsWriter } from '@/modules/leads/leads-ports';
-import { E2E_GYM_ID, e2eLeads, e2eNextId } from '@/lib/api/e2e/store';
+import { E2E_GYM_ID, e2eLeads, e2eMembershipInvites, e2eNextId } from '@/lib/api/e2e/store';
+import type { MembershipInvite } from '@/modules/membership-invites/membership-invites-ports';
 
 export function createE2eLeadsAdapter(): LeadsReader & LeadsWriter {
     return {
@@ -110,6 +111,73 @@ export function createE2eLeadsAdapter(): LeadsReader & LeadsWriter {
             };
             e2eLeads[idx] = updated;
             return { lead: updated };
+        },
+
+        /**
+         * Mirrors the API's own preconditions rather than always succeeding — a
+         * fixture that skipped them would let a spec "prove" a flow the real
+         * endpoint rejects.
+         */
+        async convert({ gymOrgId, leadId, body }) {
+            const idx = e2eLeads.findIndex((item) => item.id === leadId);
+            if (idx < 0) {
+                throw new ApiClientError({ code: 'NOT_FOUND', message: 'Not found', status: 404 });
+            }
+            const lead = e2eLeads[idx];
+            if (lead.status === 'CONVERTED') {
+                throw new ApiClientError({
+                    code: 'LEAD_ALREADY_CONVERTED',
+                    message: 'Lead has already been converted to a membership invite',
+                    status: 409,
+                });
+            }
+            if (lead.status === 'LOST') {
+                throw new ApiClientError({
+                    code: 'LEAD_NOT_CONVERTIBLE',
+                    message: 'Lost leads cannot be converted; create a new lead for a re-inquiry',
+                    status: 422,
+                });
+            }
+            const invitedEmail = body.invitedEmail || lead.email;
+            if (!invitedEmail) {
+                throw new ApiClientError({
+                    code: 'LEAD_EMAIL_REQUIRED',
+                    message: 'An email is required to convert a lead; set it on the lead or pass invitedEmail',
+                    status: 422,
+                });
+            }
+
+            const invite: MembershipInvite = {
+                id: e2eNextId('minvite-e2e-new'),
+                gymOrgId,
+                invitedEmail,
+                invitedUserId: null,
+                inviteeName: lead.name,
+                inviteePhone: lead.phone,
+                basePlanId: body.basePlanId,
+                basePaymentStatus: body.basePaymentStatus,
+                addonPlanId: body.addonPlanId ?? null,
+                addonPaymentStatus: body.addonPaymentStatus ?? null,
+                status: 'PENDING',
+                expiresAt: body.expiresAt ?? '2026-09-18T00:00:00.000Z',
+                createdBy: 'e2e-user-1',
+                acceptedAt: null,
+                acceptedMembershipId: null,
+                createdAt: '2026-08-19T00:00:00.000Z',
+                updatedAt: '2026-08-19T00:00:00.000Z',
+            };
+            e2eMembershipInvites.unshift(invite);
+
+            const updated: Lead = {
+                ...lead,
+                email: invitedEmail,
+                status: 'CONVERTED',
+                convertedMembershipInviteId: invite.id,
+                updatedAt: '2026-08-19T00:00:00.000Z',
+            };
+            e2eLeads[idx] = updated;
+
+            return { lead: updated, membershipInviteId: invite.id };
         },
 
         async softDelete({ leadId }) {

@@ -13,7 +13,7 @@ Living project stage for agents and humans. Log entries live one-per-file in `do
 | Admin desk layout (queue + rail) | Done — `components/admin/` chrome (`work-queue-layout`, `metric-strip`, `segmented-filter`, `work-queue-skeleton`, `contact-actions`, `error-notice`, `confirm-action-dialog`), domain-free, landing the `stash@{3}` hybrid prototype as real code. Adopted by **every Admin ops screen**: renewals, CRM, attendance, members (roster + invites) and the plan catalog. Settings keeps its forms. Fully token-indirected, so dark mode needed no per-component work. Colour palette still deferred by design |
 | Architecture plan + SOLID/DI | Done (ADR-0003, ADR-0004) |
 | Matt Pocock skills | Done (`.agents/skills`) |
-| Postman API collection | Sibling at **`9b0b561`** (Convert Lead + trainer list + Nutrition/Coaching/Health Sync). Cloud inject still blocked — Postman MCP 401; Desktop Import the sibling JSON |
+| Postman API collection | Sibling at **`9b0b561`** (Convert Lead — now wired, see M11 below — + trainer list + Nutrition/Coaching/Health Sync, still unwired). Cloud inject still blocked — Postman MCP 401; Desktop Import the sibling JSON |
 | Client/Admin auth guide | Done — `docs/api/client-auth.md` |
 | Silent session refresh | Done — `proxy.ts` rotates the access/refresh pair via `POST /auth/refresh` before it expires; cookie `Max-Age` decoupled from the access-token TTL (`2026-08-16` fix, see progress log) so it survives to be refreshed instead of the browser dropping it at the 1h mark. Verified live against prod (`2026-08-16`): rotation + 401-on-stale-token both confirmed; Google-lane compatibility inferred high-confidence (shared Supabase issuer), not directly browser-tested |
 | Auth research notes | Archived — `docs/archive/research/` |
@@ -88,7 +88,16 @@ Living project stage for agents and humans. Log entries live one-per-file in `do
     gained a `columns` slot), delete → quiet and fenced by a hairline. Shared chrome takes
     both new options with today's behaviour as the default, so the other four desks are
     untouched. See `docs/progress/2026-08-21-plans-catalog-proportions.md`.
-14. Optional: confirm Google-lane `/auth/refresh` compatibility with an actual browser OAuth round-trip (curl-verified for OTP-lane on `2026-08-16`; Google-lane inferred, not directly hit).
+14. ~~Convert Lead~~ — **Done.** `POST …/leads/:leadId/convert` wired: creates a PENDING
+    membership invite from a lead in one call and flips it to `CONVERTED`. The rail's stage
+    picker no longer offers `CONVERTED` directly — it is reachable only through Convert now,
+    so a converted lead always has a real invite behind it, not just a status label. Picked
+    up a real gap on the way: the web `Lead` type had no `email` field despite the API
+    carrying one since before this module landed, which Convert's fallback rule depends on.
+    Shared the members desk's plan/payment picker (`InvitePlanFields`) rather than
+    duplicating it — its first E2E coverage landed with this, since nothing had exercised
+    that form before. See `docs/progress/2026-09-12-convert-lead.md`.
+15. Optional: confirm Google-lane `/auth/refresh` compatibility with an actual browser OAuth round-trip (curl-verified for OTP-lane on `2026-08-16`; Google-lane inferred, not directly hit).
 
 ## Log
 

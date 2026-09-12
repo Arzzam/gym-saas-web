@@ -44,12 +44,49 @@ export class CrmPage {
     }
 
     /** Capture is a dialog now, not a permanent form above the pipeline. */
-    async captureLead(name: string, phone: string) {
+    async captureLead(name: string, phone: string, email?: string) {
         await this.captureTrigger.click();
         const dialog = this.page.getByRole('dialog');
         await dialog.getByLabel('Name', { exact: true }).fill(name);
         await dialog.getByLabel('Phone', { exact: true }).fill(phone);
+        // Not `exact`: the label reads "Email (optional)" when the lead already
+        // has one, and this method is used for leads that start without.
+        if (email) {
+            await dialog.getByLabel('Email').fill(email);
+        }
         await dialog.getByRole('button', { name: 'Create lead' }).click();
+    }
+
+    get convertTrigger(): Locator {
+        return this.rail.getByRole('button', { name: 'Convert to member', exact: true });
+    }
+
+    /**
+     * Convert is a form, not a confirm step — the plan/payment picks are the
+     * deliberate act. Options are clicked on the page, same reason as `setStage`.
+     */
+    async convertLead(input: { email?: string; plan: string; payment?: string; addon?: string }) {
+        await this.convertTrigger.click();
+        const dialog = this.page.getByRole('dialog');
+        // Not `exact`: convert's email label reads "Email (optional)" whenever
+        // the lead already has one on file.
+        if (input.email) {
+            await dialog.getByLabel('Email').fill(input.email);
+        }
+
+        await dialog.getByRole('combobox', { name: 'Membership', exact: true }).click();
+        await this.page.getByRole('option', { name: input.plan, exact: true }).click();
+
+        if (input.payment) {
+            await dialog.getByRole('combobox', { name: 'Membership payment', exact: true }).click();
+            await this.page.getByRole('option', { name: input.payment, exact: true }).click();
+        }
+        if (input.addon) {
+            await dialog.getByRole('combobox', { name: 'Add-on', exact: true }).click();
+            await this.page.getByRole('option', { name: input.addon, exact: true }).click();
+        }
+
+        await dialog.getByRole('button', { name: 'Convert lead' }).click();
     }
 
     /**

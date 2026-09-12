@@ -145,6 +145,8 @@ export function LeadsAdminPanel({ gymName, statusFilter, today }: LeadsAdminPane
                 rail={
                     <LeadDetailRail
                         row={selected}
+                        basePlans={data?.basePlans ?? []}
+                        addonPlans={data?.addonPlans ?? []}
                         onStatusChange={(leadId, status) => changeStatus.mutate({ leadId, status })}
                         onDelete={(leadId) => deleteLead.mutate({ leadId })}
                         rowActionsPending={rowActionsPending}

@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 import { getJson } from '@/lib/query/api-fetch';
 import {
     changeLeadStatusAction,
+    convertLeadAction,
     createLeadAction,
     deleteLeadAction,
     updateLeadAction,
@@ -13,6 +14,8 @@ import { leadErrorMessage } from '@/modules/leads/leads-errors';
 import type { LeadStatus } from '@/modules/leads/leads-ports';
 import { leadsKeys } from '@/modules/leads/leads-query-keys';
 import type { LeadsPageData } from '@/modules/leads/leads-queries';
+import { membershipInvitesKeys } from '@/modules/membership-invites/membership-invites-query-keys';
+import type { MembershipPaymentStatus } from '@/modules/membership-invites/membership-invites-ports';
 
 /**
  * CRM pipeline client hooks (ADR-0011). Mutations call the existing
@@ -123,6 +126,41 @@ export function useChangeLeadStatus(statusFilter: LeadStatus | 'ALL') {
     });
 }
 
+/**
+ * Not optimistic. The API can refuse with 409 `LEAD_ALREADY_CONVERTED` or 422
+ * `LEAD_NOT_CONVERTIBLE`, and painting a lead `CONVERTED` before the server
+ * agrees would tell the gym a prospect joined when they did not.
+ *
+ * Invalidates **two** modules' caches — this is the one mutation in the repo
+ * that writes both a lead and a membership invite in one call. The new
+ * PENDING invite has to show up on the members desk's Invites queue, not just
+ * flip the lead's stage here.
+ */
+export function useConvertLead() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (input: {
+            leadId: string;
+            invitedEmail?: string;
+            basePlanId: string;
+            basePaymentStatus: MembershipPaymentStatus;
+            addonPlanId?: string;
+            addonPaymentStatus?: MembershipPaymentStatus;
+            expiresAt?: string;
+        }) => {
+            const result = await convertLeadAction(input);
+            if (!result.ok) {
+                throw new Error(result.message);
+            }
+            return result;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: leadsKeys.all });
+            queryClient.invalidateQueries({ queryKey: membershipInvitesKeys.all });
+        },
+    });
+}
+
 export function useDeleteLead(statusFilter: LeadStatus | 'ALL') {
     const queryClient = useQueryClient();
     const key = leadsKeys.page(statusFilter);
@@ -139,6 +177,7 @@ export function useDeleteLead(statusFilter: LeadStatus | 'ALL') {
         // both live in this one cache entry.
         onMutate: (input) =>
             applyOptimistic(queryClient, key, (data) => ({
+                ...data,
                 leads: data.leads.filter((lead) => lead.id !== input.leadId),
                 dueFollowUps: data.dueFollowUps.filter((lead) => lead.id !== input.leadId),
             })),

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { endpoints } from '@/modules/leads/leads-endpoints';
 import type { HttpClient } from '@/lib/api/client';
 import type {
+    ConvertLeadInput,
     CreateLeadInput,
     Lead,
     LeadStatus,
@@ -40,6 +41,18 @@ const leadEnvelopeSchema = z.object({
 
 const leadOnlyEnvelopeSchema = z.object({
     lead: leadSchema,
+});
+
+/**
+ * `Convert Lead` 201. The invite is parsed rather than ignored — a body that
+ * came back without one would mean the conversion did not do what it says, and
+ * that should fail here, not silently downstream.
+ */
+const convertEnvelopeSchema = z.object({
+    lead: leadSchema,
+    membershipInvite: z.object({
+        id: z.string().min(1),
+    }),
 });
 
 const pageSchema = z.object({
@@ -197,6 +210,35 @@ export function createLeadsAdapter(http: HttpClient): LeadsReader & LeadsWriter 
             });
             const parsed = leadOnlyEnvelopeSchema.parse(raw);
             return { lead: normalizeLead(parsed.lead, gymOrgId) };
+        },
+
+        async convert({ accessToken, gymOrgId, leadId, body }) {
+            const payload: ConvertLeadInput = {
+                basePlanId: body.basePlanId,
+                basePaymentStatus: body.basePaymentStatus,
+            };
+            if (body.invitedEmail) {
+                payload.invitedEmail = body.invitedEmail;
+            }
+            // Both or neither — the API rejects a half-set add-on.
+            if (body.addonPlanId && body.addonPaymentStatus) {
+                payload.addonPlanId = body.addonPlanId;
+                payload.addonPaymentStatus = body.addonPaymentStatus;
+            }
+            if (body.expiresAt) {
+                payload.expiresAt = body.expiresAt;
+            }
+            const raw = await http.request<unknown>({
+                path: endpoints.gymOrgLeadConvert(gymOrgId, leadId),
+                method: 'POST',
+                accessToken,
+                body: payload,
+            });
+            const parsed = convertEnvelopeSchema.parse(raw);
+            return {
+                lead: normalizeLead(parsed.lead, gymOrgId),
+                membershipInviteId: parsed.membershipInvite.id,
+            };
         },
 
         async softDelete({ accessToken, gymOrgId, leadId }) {

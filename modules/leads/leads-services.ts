@@ -4,6 +4,7 @@ import { createE2eLeadsAdapter } from '@/modules/leads/leads-e2e-fixtures';
 import { createLeadsAdapter } from '@/modules/leads/leads-adapter';
 import {
     createChangeLeadStatus,
+    createConvertLead,
     createCreateLead,
     createListDueFollowUps,
     createListLeads,
@@ -21,6 +22,7 @@ export function leadsServices(http: HttpClient) {
         createLead: createCreateLead({ leads }),
         updateLead: createUpdateLead({ leads }),
         changeLeadStatus: createChangeLeadStatus({ leads }),
+        convertLead: createConvertLead({ leads }),
         softDeleteLead: createSoftDeleteLead({ leads }),
     };
 }
