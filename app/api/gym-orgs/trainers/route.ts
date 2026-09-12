@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 
 import { ApiClientError } from '@/lib/api/errors';
 import { requireStaffGym } from '@/lib/auth/staff-gym-gate';
+import { gymOrgErrorMessage } from '@/modules/gym-orgs/gym-orgs-errors';
 import { listGymTrainersForGym } from '@/modules/gym-orgs/gym-orgs-queries';
-import { rosterErrorMessage } from '@/modules/roster/roster-errors';
 
 /**
  * Client refetch endpoint for the trainer picker (ADR-0011).
@@ -14,7 +14,7 @@ export async function GET() {
     const gate = await requireStaffGym();
     if (!gate.ok) {
         return NextResponse.json(
-            { error: { code: gate.code, message: rosterErrorMessage(gate.code) } },
+            { error: { code: gate.code, message: gymOrgErrorMessage(gate.code) } },
             { status: gate.status },
         );
     }
@@ -28,12 +28,12 @@ export async function GET() {
     } catch (error) {
         if (error instanceof ApiClientError) {
             return NextResponse.json(
-                { error: { code: error.code, message: rosterErrorMessage(error.code, error.message) } },
+                { error: { code: error.code, message: gymOrgErrorMessage(error.code, error.message) } },
                 { status: error.status === 0 ? 502 : error.status },
             );
         }
         return NextResponse.json(
-            { error: { code: 'NETWORK_OR_UNKNOWN', message: rosterErrorMessage('NETWORK_OR_UNKNOWN') } },
+            { error: { code: 'NETWORK_OR_UNKNOWN', message: gymOrgErrorMessage('NETWORK_OR_UNKNOWN') } },
             { status: 500 },
         );
     }

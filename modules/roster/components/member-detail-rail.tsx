@@ -1,10 +1,12 @@
 'use client';
 
+import Link from 'next/link';
+
 import { ConfirmActionDialog } from '@/components/admin/confirm-action-dialog';
 import { ContactActions } from '@/components/admin/contact-actions';
 import { WorkQueueRailPanel, WorkQueueRailSection } from '@/components/admin/work-queue-layout';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { statusToneBadgeVariant } from '@/lib/ui/status-tone';
 import {
     membershipPaymentStatusLabel,
@@ -75,6 +77,13 @@ export function MemberDetailRail({ row, onSetCheckInBlock, onOffboard, rowAction
                 <p className="truncate text-xs text-(--color-fg-muted)">
                     {member.clientEmail} · joined {formatJoined(member.joinedAt)}
                 </p>
+                {/* Grant-aware vitals + progress — CLIENT-owned, so it lives on its own route rather than here. */}
+                <Link
+                    href={`/admin/members/${member.clientUserId}`}
+                    className={buttonVariants({ variant: 'secondary' })}
+                >
+                    Profile
+                </Link>
             </div>
 
             <ContactActions phone={member.clientPhone} email={member.clientEmail} />

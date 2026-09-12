@@ -108,6 +108,18 @@ export function createRosterAdapter(http: HttpClient): RosterReader & RosterWrit
             };
         },
 
+        async listMyAssignedMembers({ accessToken, gymOrgId, status, q }) {
+            const raw = await http.request<unknown>({
+                path: `${endpoints.gymOrgMyAssignedMembers(gymOrgId)}${listQuery({ status, q })}`,
+                method: 'GET',
+                accessToken,
+            });
+            const parsed = membersEnvelopeSchema.parse(raw);
+            return {
+                members: parsed.members.map((item) => normalizeMember(item, gymOrgId)),
+            };
+        },
+
         async offboard({ accessToken, gymOrgId, membershipId }) {
             const raw = await http.request<unknown>({
                 path: endpoints.gymOrgMemberOffboard(gymOrgId, membershipId),

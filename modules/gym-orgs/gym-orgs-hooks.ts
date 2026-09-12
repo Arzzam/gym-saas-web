@@ -3,18 +3,18 @@
 import { useQuery } from '@tanstack/react-query';
 
 import { getJson } from '@/lib/query/api-fetch';
+import { gymOrgErrorMessage } from '@/modules/gym-orgs/gym-orgs-errors';
 import type { GymTrainer } from '@/modules/gym-orgs/gym-orgs-ports';
 import { gymOrgsKeys } from '@/modules/gym-orgs/gym-orgs-query-keys';
-import { rosterErrorMessage } from '@/modules/roster/roster-errors';
 
-/** Gym-org client hooks (ADR-0011). */
+/** Live trainer_profiles at the session gym — GET /gym-orgs/:id/trainers via BFF. */
 export function useGymTrainers() {
     return useQuery({
         queryKey: gymOrgsKeys.trainers(),
         queryFn: async () => {
             const { trainers } = await getJson<{ trainers: GymTrainer[] }>(
                 '/api/gym-orgs/trainers',
-                rosterErrorMessage('NETWORK_OR_UNKNOWN'),
+                gymOrgErrorMessage('NETWORK_OR_UNKNOWN'),
             );
             return trainers;
         },

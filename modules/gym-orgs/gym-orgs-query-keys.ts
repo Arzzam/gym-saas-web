@@ -1,5 +1,5 @@
 /**
- * Query-key factory for gym-org reads (ADR-0011).
+ * Query-key factory for gym-org reads used on Admin surfaces (ADR-0011).
  *
  * Trainers get their own key rather than riding along in the roster payload,
  * unlike the joins on the renewals and attendance desks. The reason is

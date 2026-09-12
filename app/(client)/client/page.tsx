@@ -39,7 +39,9 @@ export default async function ClientHomePage() {
         <div className="space-y-6">
             <div>
                 <h1 className="text-2xl font-semibold tracking-tight text-(--color-fg)">Member home</h1>
-                <p className="mt-1 text-sm text-(--color-fg-muted)">Accept a gym invite to start your membership.</p>
+                <p className="mt-1 text-sm text-(--color-fg-muted)">
+                    Accept a gym invite to start your membership. Profile and progress live under Profile.
+                </p>
             </div>
 
             <Suspense fallback={<ClientHomeSkeleton />}>

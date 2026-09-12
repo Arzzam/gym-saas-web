@@ -1,34 +1,60 @@
 import { HydrationBoundary, dehydrate } from '@tanstack/react-query';
 import { Suspense } from 'react';
 
+import { WorkQueueSkeleton } from '@/components/admin/work-queue-skeleton';
 import { getSession, isStaffSession } from '@/lib/auth/session';
 import { getQueryClient } from '@/lib/query/query-client';
 import { gymOrgsKeys } from '@/modules/gym-orgs/gym-orgs-query-keys';
 import { listGymTrainersForGym } from '@/modules/gym-orgs/gym-orgs-queries';
 import { listStaffGymOrgs } from '@/modules/gym-orgs/list-staff-gym-orgs';
-import { WorkQueueSkeleton } from '@/components/admin/work-queue-skeleton';
 import { membershipInvitesKeys } from '@/modules/membership-invites/membership-invites-query-keys';
 import { listMembershipInvitesPageForGym } from '@/modules/membership-invites/membership-invites-queries';
+import { AssignedMembersPanel } from '@/modules/roster/components/assigned-members-panel';
 import { MembersDeskPanel } from '@/modules/roster/components/members-desk-panel';
 import { parseMemberScope, type MemberScope } from '@/modules/roster/roster-desk';
 import { rosterKeys } from '@/modules/roster/roster-query-keys';
-import { listActiveRosterForGym } from '@/modules/roster/roster-queries';
+import { listActiveRosterForGym, listMyAssignedMembersForGym } from '@/modules/roster/roster-queries';
+
+type MembersWorkspaceProps = {
+    accessToken: string;
+    roleCode: string;
+    scope: MemberScope;
+};
 
 /**
- * Invites, roster and trainers are prefetched in parallel but kept as
- * **separate query keys**: they are mutated independently, so a check-in block
- * should not refetch the invite list (and vice versa), and the roster's
- * optimistic writes stay a map over a plain `RosterMember[]`.
+ * ADMIN (and every other non-TRAINER staff role): the members desk — invites,
+ * roster and trainer picker, prefetched in parallel but kept as **separate
+ * query keys**: they are mutated independently, so a check-in block should not
+ * refetch the invite list (and vice versa), and the roster's optimistic writes
+ * stay a map over a plain `RosterMember[]`.
+ *
+ * TRAINER: assigned clients only (Postman `List My Assigned Members`) — a
+ * trainer never sees the full roster or the invite queue.
  */
-async function MembersWorkspace({ accessToken, scope }: { accessToken: string; scope: MemberScope }) {
+async function MembersWorkspace({ accessToken, roleCode, scope }: MembersWorkspaceProps) {
     const gymOrgs = await listStaffGymOrgs(accessToken);
     const gym = gymOrgs[0];
     if (!gym) {
-        // Unreachable in practice: (ops)/layout.tsx redirects 0-gym Staff to Settings.
         return null;
     }
 
+    // Only TRAINER gets the assigned-only list; every other staff role sees the full roster.
+    const isTrainerScoped = roleCode === 'TRAINER';
     const queryClient = getQueryClient();
+
+    if (isTrainerScoped) {
+        await queryClient.prefetchQuery({
+            queryKey: rosterKeys.assigned(),
+            queryFn: () => listMyAssignedMembersForGym({ accessToken, gymOrgId: gym.id }),
+        });
+
+        return (
+            <HydrationBoundary state={dehydrate(queryClient)}>
+                <AssignedMembersPanel />
+            </HydrationBoundary>
+        );
+    }
+
     await Promise.all([
         queryClient.prefetchQuery({
             queryKey: membershipInvitesKeys.list(),
@@ -59,6 +85,7 @@ export default async function MembersPage({ searchParams }: { searchParams: Prom
         return null;
     }
 
+    const isTrainerScoped = session.roleCode === 'TRAINER';
     const scope = parseMemberScope((await searchParams).scope);
 
     return (
@@ -66,13 +93,14 @@ export default async function MembersPage({ searchParams }: { searchParams: Prom
             <div>
                 <h1 className="text-2xl font-semibold tracking-tight text-(--color-fg) md:text-3xl">Members</h1>
                 <p className="mt-2 max-w-2xl text-sm text-(--color-fg-muted)">
-                    Everyone connected to this gym — members on the roster, and the people you have invited. Payment
-                    badges are informational; entitlement follows subscription dates.
+                    {isTrainerScoped
+                        ? 'Clients assigned to you for coaching. Open Profile to view shared vitals and progress.'
+                        : 'Everyone connected to this gym — members on the roster, and the people you have invited. Payment badges are informational; entitlement follows subscription dates.'}
                 </p>
             </div>
 
             <Suspense fallback={<WorkQueueSkeleton />}>
-                <MembersWorkspace accessToken={session.accessToken} scope={scope} />
+                <MembersWorkspace accessToken={session.accessToken} roleCode={session.roleCode} scope={scope} />
             </Suspense>
         </div>
     );

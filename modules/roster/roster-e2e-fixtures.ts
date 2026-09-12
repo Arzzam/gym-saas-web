@@ -42,6 +42,28 @@ export function createE2eRosterAdapter(): RosterReader & RosterWriter {
             return { members: items };
         },
 
+        async listMyAssignedMembers({ gymOrgId, status, q }) {
+            if (gymOrgId !== E2E_GYM_ID) {
+                return { members: [] };
+            }
+            // E2E staff actor is the first gym trainer — scope to that profile id.
+            const selfTrainerId = e2eGymTrainers[0]?.trainerProfileId ?? null;
+            let items = e2eRosterMembers.filter((member) => member.assignedTrainerId === selfTrainerId);
+            if (status) {
+                items = items.filter((member) => member.status === status);
+            }
+            if (q?.trim()) {
+                const needle = q.trim().toLowerCase();
+                items = items.filter(
+                    (member) =>
+                        member.clientName.toLowerCase().includes(needle) ||
+                        member.clientEmail.toLowerCase().includes(needle) ||
+                        (member.clientPhone ?? '').toLowerCase().includes(needle),
+                );
+            }
+            return { members: items };
+        },
+
         async offboard({ gymOrgId, membershipId }) {
             const idx = e2eRosterMembers.findIndex(
                 (item) => item.membershipId === membershipId && item.gymOrgId === gymOrgId,
@@ -74,7 +96,14 @@ export function createE2eRosterAdapter(): RosterReader & RosterWriter {
                 (item) => item.membershipId === membershipId && item.gymOrgId === gymOrgId,
             );
             if (idx < 0) {
-                throw new ApiClientError({ code: 'NOT_FOUND', message: 'Not found', status: 404 });
+                throw new ApiClientError({ code: 'NOT_FOUND', message: 'Active membership not found', status: 404 });
+            }
+            if (e2eRosterMembers[idx].status !== 'ACTIVE') {
+                throw new ApiClientError({
+                    code: 'CLIENT_MEMBERSHIP_INVALID_TRANSITION',
+                    message: 'Cannot assign a trainer to an inactive membership',
+                    status: 422,
+                });
             }
             if (!e2eGymTrainers.some((trainer) => trainer.trainerProfileId === trainerProfileId)) {
                 throw new ApiClientError({ code: 'TRAINER_NOT_FOUND', message: 'Trainer not found', status: 404 });

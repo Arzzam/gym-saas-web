@@ -52,9 +52,10 @@ export function formatInviteExpiry(iso: string): string {
     if (Number.isNaN(date.getTime())) {
         return iso;
     }
-    return date.toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    });
+    // Pin locale + zone so SSR (Node) and the browser print the same string.
+    // `undefined` locale was Node `en-GB` (“2 Sept 2026”) vs the browser `en-US` (“Sep 2, 2026”).
+    return new Intl.DateTimeFormat('en-IN', {
+        dateStyle: 'medium',
+        timeZone: 'Asia/Kolkata',
+    }).format(date);
 }

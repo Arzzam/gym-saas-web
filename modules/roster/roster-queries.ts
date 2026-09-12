@@ -14,3 +14,17 @@ export async function listActiveRosterForGym(input: {
     });
     return members;
 }
+
+/** Trainer (or Admin-as-Trainer) assigned ACTIVE clients. */
+export async function listMyAssignedMembersForGym(input: {
+    accessToken: string;
+    gymOrgId: string;
+}): Promise<RosterMember[]> {
+    const { listMyAssignedMembers } = createAppServices();
+    const { members } = await listMyAssignedMembers({
+        accessToken: input.accessToken,
+        gymOrgId: input.gymOrgId,
+        status: 'ACTIVE',
+    });
+    return members;
+}

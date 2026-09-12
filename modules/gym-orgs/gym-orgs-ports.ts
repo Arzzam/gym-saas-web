@@ -37,17 +37,24 @@ export type GymTrainer = {
     staffCode: string | null;
     bio: string | null;
     isAdmin: boolean;
+    createdAt: string | null;
+};
+
+export type GymTrainersPage = {
+    items: GymTrainer[];
+    total: number;
+    limit: number;
+    offset: number;
 };
 
 export type GymOrgsReader = {
     list: (input: { accessToken: string }) => Promise<{ gymOrgs: GymOrgSummary[] }>;
-
     listTrainers: (input: {
         accessToken: string;
         gymOrgId: string;
         limit?: number;
         offset?: number;
-    }) => Promise<{ trainers: GymTrainer[] }>;
+    }) => Promise<{ trainers: GymTrainersPage }>;
 };
 
 export type GymOrgsWriter = {

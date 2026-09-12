@@ -56,3 +56,49 @@ describe('POST /gym-orgs create response schema', () => {
         ).toThrow();
     });
 });
+
+const gymTrainerSchema = z.object({
+    trainerProfileId: z.string().min(1),
+    userId: z.string().min(1),
+    name: z.string().min(1),
+    email: z.string().min(1),
+    staffCode: z.string().nullable(),
+    bio: z.string().nullable(),
+    isAdmin: z.boolean(),
+});
+
+const trainersEnvelopeSchema = z.object({
+    trainers: z.object({
+        items: z.array(gymTrainerSchema),
+        total: z.number(),
+        limit: z.number(),
+        offset: z.number(),
+    }),
+});
+
+describe('GET /gym-orgs/:gymOrgId/trainers envelope (Postman 200)', () => {
+    it('accepts List Gym Trainers example items', () => {
+        const parsed = trainersEnvelopeSchema.parse({
+            trainers: {
+                items: [
+                    {
+                        trainerProfileId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+                        userId: '22222222-2222-4222-8222-222222222222',
+                        gymOrgId: '33333333-3333-4333-8333-333333333333',
+                        name: 'Owner Admin',
+                        email: 'owner@example.com',
+                        staffCode: 'STAFF-AB12',
+                        bio: null,
+                        isAdmin: true,
+                        createdAt: '2026-08-08T12:00:00.000Z',
+                    },
+                ],
+                total: 1,
+                limit: 20,
+                offset: 0,
+            },
+        });
+        expect(parsed.trainers.items[0]?.trainerProfileId).toBe('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
+        expect(parsed.trainers.items[0]?.isAdmin).toBe(true);
+    });
+});

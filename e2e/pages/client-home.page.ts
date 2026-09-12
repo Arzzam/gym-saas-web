@@ -7,7 +7,8 @@ export class ClientHomePage {
     readonly acceptButton: Locator;
     readonly dataSharingHeading: Locator;
     readonly saveSharingButton: Locator;
-    readonly adminSidebar: Locator;
+    readonly profileNav: Locator;
+    readonly memberSidebar: Locator;
 
     constructor(page: Page) {
         this.page = page;
@@ -22,8 +23,12 @@ export class ClientHomePage {
         this.saveSharingButton = page.getByRole('button', {
             name: 'Save sharing',
         });
-        this.adminSidebar = page.getByRole('complementary', {
-            name: 'Admin modules',
+        this.profileNav = page.getByRole('complementary', { name: 'Member modules' }).getByRole('link', {
+            name: 'Profile',
+            exact: true,
+        });
+        this.memberSidebar = page.getByRole('complementary', {
+            name: 'Member modules',
         });
     }
 

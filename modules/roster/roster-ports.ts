@@ -1,6 +1,8 @@
 /**
  * Gym roster — Postman Roster folder.
- * Authz: Auth + STAFF session + gym tenant; API enforces ADMIN.
+ * Authz: Auth + STAFF session + gym tenant.
+ * Full list / mutations: API enforces ADMIN.
+ * Assigned list: live trainer_profiles (TRAINER or Admin-as-Trainer).
  * No DataGrant — membership / check-in block are gym-owned.
  */
 
@@ -38,6 +40,14 @@ export type MembershipMutation = {
 
 export type RosterReader = {
     listMembers: (input: {
+        accessToken: string;
+        gymOrgId: string;
+        status?: MembershipStatus;
+        q?: string;
+    }) => Promise<{ members: RosterMember[] }>;
+
+    /** Trainer (or Admin-as-Trainer) clients assigned to the actor's trainer profile. */
+    listMyAssignedMembers: (input: {
         accessToken: string;
         gymOrgId: string;
         status?: MembershipStatus;

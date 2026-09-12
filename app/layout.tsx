@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google';
 
 import { QueryProvider } from '@/components/query/query-provider';
 import { ThemeProvider } from '@/components/theme/theme-provider';
+import { BRAND_NAME } from '@/lib/brand';
 import { themeBootScript } from '@/lib/theme/theme-mode';
 
 import './globals.css';
@@ -18,8 +19,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-    title: 'Gym SaaS',
-    description: 'Admin-first Gym SaaS web',
+    title: BRAND_NAME,
+    description: 'Admin-first gym management for staff and members',
 };
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {

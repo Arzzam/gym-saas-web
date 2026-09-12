@@ -5,12 +5,10 @@ import { useMemo, type ReactNode } from 'react';
 
 import { AppSidebar } from '@/components/admin/app-sidebar';
 import { getActiveAdminNavItem, type AdminShellMode } from '@/components/admin/admin-nav';
-import { ThemeToggle } from '@/components/theme/theme-toggle';
-import { Button } from '@/components/ui/button';
+import { ProfileMenu } from '@/components/profile/profile-menu';
 import { Separator } from '@/components/ui/separator';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { signOutAction } from '@/modules/auth/auth-actions';
 
 export type AdminShellUser = {
     displayName: string;
@@ -59,23 +57,14 @@ export function AdminShell({
                         <p className="min-w-0 truncate text-sm font-medium text-(--color-fg)">{pageLabel}</p>
 
                         <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
-                            <ThemeToggle />
-                            <div className="hidden text-right sm:block">
-                                <p className="text-sm leading-tight font-medium">{user.displayName}</p>
-                                <p className="text-xs text-(--color-fg-muted)">{user.roleCode}</p>
-                            </div>
-                            <div
-                                className="flex h-9 w-9 items-center justify-center rounded-full bg-(--color-canvas-accent) text-xs font-semibold text-(--color-fg) ring-2 ring-(--color-surface)"
-                                title={user.email}
-                                aria-label={user.displayName}
-                            >
-                                {user.initials}
-                            </div>
-                            <form action={signOutAction}>
-                                <Button type="submit" variant="ghost" className="text-xs">
-                                    Sign out
-                                </Button>
-                            </form>
+                            <ProfileMenu
+                                user={{
+                                    displayName: user.displayName,
+                                    email: user.email,
+                                    roleLabel: user.roleCode,
+                                    initials: user.initials,
+                                }}
+                            />
                         </div>
                     </header>
 

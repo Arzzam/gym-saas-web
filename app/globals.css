@@ -121,6 +121,28 @@ body {
         linear-gradient(180deg, var(--color-canvas-accent) 0%, var(--color-canvas) 45%);
 }
 
+/* Same glow recipe as `.admin-shell`, re-aimed for the tall auth split panel. */
+.auth-hero {
+    background:
+        radial-gradient(700px 520px at 12% 4%, var(--color-shell-glow-a) 0%, transparent 62%),
+        radial-gradient(620px 620px at 92% 96%, var(--color-shell-glow-b) 0%, transparent 58%),
+        linear-gradient(158deg, var(--color-canvas-accent) 0%, var(--color-canvas) 100%);
+}
+
+/*
+ * Faint blueprint grid behind the auth panel. The mask stops it well short of
+ * the copy so it reads as texture, not decoration. `black` here is a mask
+ * alpha stencil, not a palette value — it is not themeable.
+ */
+.auth-hero-grid {
+    background-image:
+        linear-gradient(to right, var(--color-border) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--color-border) 1px, transparent 1px);
+    background-size: 48px 48px;
+    opacity: 0.5;
+    mask-image: radial-gradient(760px 520px at 8% 0%, black 0%, transparent 70%);
+}
+
 @layer base {
     * {
         @apply border-border outline-ring/50;

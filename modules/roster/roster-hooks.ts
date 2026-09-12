@@ -23,6 +23,19 @@ export function useActiveRoster() {
     });
 }
 
+export function useMyAssignedMembers() {
+    return useQuery({
+        queryKey: rosterKeys.assigned(),
+        queryFn: async () => {
+            const { members } = await getJson<{ members: RosterMember[] }>(
+                '/api/roster/assigned',
+                rosterErrorMessage('NETWORK_OR_UNKNOWN'),
+            );
+            return members;
+        },
+    });
+}
+
 async function applyOptimistic(
     queryClient: QueryClient,
     update: (members: RosterMember[]) => RosterMember[],

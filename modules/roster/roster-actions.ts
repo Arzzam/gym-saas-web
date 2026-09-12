@@ -98,8 +98,16 @@ export async function assignTrainerAction(input: {
     if (!gate.ok) {
         return gate.result;
     }
-
-    if (!input.trainerProfileId) {
+    const membershipId = input.membershipId.trim();
+    const trainerProfileId = input.trainerProfileId.trim();
+    if (!membershipId) {
+        return {
+            ok: false,
+            code: 'VALIDATION_ERROR',
+            message: rosterErrorMessage('VALIDATION_ERROR'),
+        };
+    }
+    if (!trainerProfileId) {
         return { ok: false, code: 'VALIDATION_ERROR', message: 'Pick a trainer to assign.' };
     }
 
@@ -108,8 +116,8 @@ export async function assignTrainerAction(input: {
         await assignTrainer({
             accessToken: gate.accessToken,
             gymOrgId: gate.gymOrgId,
-            membershipId: input.membershipId,
-            trainerProfileId: input.trainerProfileId,
+            membershipId,
+            trainerProfileId,
         });
         revalidatePath('/admin/members');
         return { ok: true };

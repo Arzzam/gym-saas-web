@@ -77,7 +77,8 @@ test.describe('OTP sign-in destinations (E2E fixtures)', () => {
         });
         await expect(page).toHaveURL(/\/client/);
         await expect(clientHomePage.heading).toBeVisible();
-        await expect(clientHomePage.adminSidebar).toHaveCount(0);
+        await expect(clientHomePage.memberSidebar).toBeVisible();
+        await expect(clientHomePage.page.getByRole('complementary', { name: 'Admin modules' })).toHaveCount(0);
     });
 
     test('returning Staff without gym still lands on Settings', async ({ loginPage, settingsPage, page }) => {

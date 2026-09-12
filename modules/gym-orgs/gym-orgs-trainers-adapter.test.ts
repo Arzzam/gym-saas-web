@@ -42,16 +42,17 @@ const POSTMAN_BODY = {
 };
 
 describe('gymOrgsAdapter.listTrainers', () => {
-    it('unwraps the paged envelope into a flat list', async () => {
+    it('parses the paged envelope', async () => {
         const adapter = createGymOrgsAdapter(stubHttp(POSTMAN_BODY));
 
         const { trainers } = await adapter.listTrainers({ accessToken: 't', gymOrgId: 'gym-1' });
 
-        expect(trainers).toHaveLength(1);
-        expect(trainers[0].trainerProfileId).toBe('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
-        expect(trainers[0].userId).toBe('22222222-2222-4222-8222-222222222222');
-        expect(trainers[0].name).toBe('Owner Admin');
-        expect(trainers[0].isAdmin).toBe(true);
+        expect(trainers.items).toHaveLength(1);
+        expect(trainers.total).toBe(1);
+        expect(trainers.items[0].trainerProfileId).toBe('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
+        expect(trainers.items[0].userId).toBe('22222222-2222-4222-8222-222222222222');
+        expect(trainers.items[0].name).toBe('Owner Admin');
+        expect(trainers.items[0].isAdmin).toBe(true);
     });
 
     it('scopes the request to the gym it was given', async () => {
@@ -73,24 +74,36 @@ describe('gymOrgsAdapter.listTrainers', () => {
                             userId: 'u1',
                             name: 'Minimal Trainer',
                             email: 'min@example.com',
+                            isAdmin: false,
                         },
                     ],
+                    total: 1,
+                    limit: 20,
+                    offset: 0,
                 },
             }),
         );
 
         const { trainers } = await adapter.listTrainers({ accessToken: 't', gymOrgId: 'gym-1' });
 
-        expect(trainers[0].staffCode).toBeNull();
-        expect(trainers[0].bio).toBeNull();
-        expect(trainers[0].isAdmin).toBe(false);
+        expect(trainers.items[0].staffCode).toBeNull();
+        expect(trainers.items[0].bio).toBeNull();
+        expect(trainers.items[0].isAdmin).toBe(false);
+        expect(trainers.items[0].createdAt).toBeNull();
         // Falls back to the gym the caller asked about, never left undefined.
-        expect(trainers[0].gymOrgId).toBe('gym-1');
+        expect(trainers.items[0].gymOrgId).toBe('gym-1');
     });
 
     it('rejects a body missing the ids the assign call depends on', async () => {
         const adapter = createGymOrgsAdapter(
-            stubHttp({ trainers: { items: [{ name: 'No ids', email: 'x@example.com' }] } }),
+            stubHttp({
+                trainers: {
+                    items: [{ name: 'No ids', email: 'x@example.com', isAdmin: false }],
+                    total: 1,
+                    limit: 20,
+                    offset: 0,
+                },
+            }),
         );
 
         await expect(adapter.listTrainers({ accessToken: 't', gymOrgId: 'gym-1' })).rejects.toThrow();

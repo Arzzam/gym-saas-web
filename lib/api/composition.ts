@@ -5,6 +5,7 @@ import { gymOrgsServices } from '@/modules/gym-orgs/gym-orgs-services';
 import { leadsServices } from '@/modules/leads/leads-services';
 import { membershipInvitesServices } from '@/modules/membership-invites/membership-invites-services';
 import { plansServices } from '@/modules/plans/plans-services';
+import { profileServices } from '@/modules/profile/profile-services';
 import { rosterServices } from '@/modules/roster/roster-services';
 import { staffInvitesServices } from '@/modules/staff-invites/staff-invites-services';
 import { subscriptionsServices } from '@/modules/subscriptions/subscriptions-services';
@@ -24,6 +25,7 @@ export function createAppServices() {
         ...gymOrgsServices(http),
         ...staffInvitesServices(http),
         ...plansServices(http),
+        ...profileServices(http),
         ...leadsServices(http),
         ...membershipInvitesServices(http),
         ...rosterServices(http),

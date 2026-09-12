@@ -12,7 +12,7 @@ export function gymOrgsServices(http: HttpClient) {
     return {
         gymOrgs,
         listGymOrgs: createListGymOrgs({ gymOrgs }),
-        createGymOrg: createCreateGymOrg({ gymOrgs }),
         listGymTrainers: createListGymTrainers({ gymOrgs }),
+        createGymOrg: createCreateGymOrg({ gymOrgs }),
     };
 }

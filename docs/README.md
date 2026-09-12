@@ -18,7 +18,8 @@ Keep this tree small. Prefer code + Current stage over essays.
 | `api/plans.md` | Plan catalog BASE/ADDON |
 | `api/leads.md` | CRM leads |
 | `api/membership-invites.md` | Membership invites + client my-data-grants |
-| `api/roster.md` | Admin roster / offboard / check-in block |
+| `api/roster.md` | Admin roster / offboard / check-in block / assign trainer |
+| `api/profile.md` | Client profile + progress; staff grant-aware member view |
 | `api/attendance.md` | Admin desk attendance |
 | `api/subscriptions.md` | Renewals due + payment update |
 | `postman-sync.md` | Sibling Postman workflow |

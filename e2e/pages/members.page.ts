@@ -64,4 +64,9 @@ export class MembersPage {
     async select(name: string) {
         await this.page.getByRole('button', { name: `Open ${name}`, exact: true }).click();
     }
+
+    /** Profile lives in the rail (one member at a time), not the queue row — select the member first. */
+    profileLink(): Locator {
+        return this.rail.getByRole('link', { name: 'Profile' });
+    }
 }

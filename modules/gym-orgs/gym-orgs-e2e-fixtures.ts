@@ -33,8 +33,17 @@ export function createE2eGymOrgsAdapter(): GymOrgsReader & GymOrgsWriter {
             return { gymOrgs: [] };
         },
 
-        async listTrainers({ gymOrgId }) {
-            return { trainers: e2eGymTrainers.filter((trainer) => trainer.gymOrgId === gymOrgId) };
+        async listTrainers({ gymOrgId, limit = 20, offset = 0 }) {
+            const forGym = e2eGymTrainers.filter((trainer) => trainer.gymOrgId === gymOrgId);
+            const items = forGym.slice(offset, offset + limit);
+            return {
+                trainers: {
+                    items,
+                    total: forGym.length,
+                    limit,
+                    offset,
+                },
+            };
         },
 
         async create({ accessToken, body }) {
