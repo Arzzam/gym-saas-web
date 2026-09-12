@@ -65,6 +65,32 @@ export class MembersPage {
         await this.page.getByRole('button', { name: `Open ${name}`, exact: true }).click();
     }
 
+    /**
+     * Invite a member through the dialog. The plan and payment `Select`s are the
+     * shared `InvitePlanFields`, so this also covers the convert dialog's half of
+     * that component. Options are clicked on the page — Base UI portals the popup.
+     */
+    async inviteMember(input: { name: string; email: string; plan: string; payment?: string; addon?: string }) {
+        await this.inviteTrigger.click();
+        const dialog = this.page.getByRole('dialog');
+        await dialog.getByLabel('Name', { exact: true }).fill(input.name);
+        await dialog.getByLabel('Email', { exact: true }).fill(input.email);
+
+        await dialog.getByRole('combobox', { name: 'Membership', exact: true }).click();
+        await this.page.getByRole('option', { name: input.plan, exact: true }).click();
+
+        if (input.payment) {
+            await dialog.getByRole('combobox', { name: 'Membership payment', exact: true }).click();
+            await this.page.getByRole('option', { name: input.payment, exact: true }).click();
+        }
+        if (input.addon) {
+            await dialog.getByRole('combobox', { name: 'Add-on', exact: true }).click();
+            await this.page.getByRole('option', { name: input.addon, exact: true }).click();
+        }
+
+        await dialog.getByRole('button', { name: 'Send invite', exact: true }).click();
+    }
+
     /** Profile lives in the rail (one member at a time), not the queue row — select the member first. */
     profileLink(): Locator {
         return this.rail.getByRole('link', { name: 'Profile' });

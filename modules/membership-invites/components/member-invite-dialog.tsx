@@ -15,13 +15,10 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { InvitePlanFields, inviteAddonFields } from '@/modules/membership-invites/components/invite-plan-fields';
 import { useCreateMembershipInvite } from '@/modules/membership-invites/membership-invites-hooks';
-import { membershipPaymentStatusLabel } from '@/modules/membership-invites/membership-invites-labels';
 import type { MembershipPaymentStatus } from '@/modules/membership-invites/membership-invites-ports';
 import type { MembershipPlan } from '@/modules/plans/plans-ports';
-
-const PAYMENT_OPTIONS: MembershipPaymentStatus[] = ['unpaid', 'paid', 'partial'];
 
 /**
  * Inviting a member is the one long form on this screen — name, email, phone,
@@ -74,11 +71,6 @@ function InviteForm({
     const createInvite = useCreateMembershipInvite();
     const error = createInvite.error?.message ?? null;
 
-    function planName(planId: string): string {
-        const plan = basePlans.find((item) => item.id === planId) ?? addonPlans.find((item) => item.id === planId);
-        return plan?.name ?? planId.slice(0, 8);
-    }
-
     function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault();
         createInvite.mutate(
@@ -88,8 +80,7 @@ function InviteForm({
                 inviteePhone: inviteePhone || undefined,
                 basePlanId,
                 basePaymentStatus,
-                addonPlanId: addonPlanId || undefined,
-                addonPaymentStatus: addonPlanId ? addonPaymentStatus : undefined,
+                ...inviteAddonFields(addonPlanId, addonPaymentStatus),
             },
             // Closes only on success: a rejected invite keeps the typed email
             // on screen with the reason.
@@ -135,84 +126,19 @@ function InviteForm({
                         placeholder="+919876500000"
                     />
                 </Field>
-                <Field id="invite-base-plan" label="Membership">
-                    <Select value={basePlanId} onValueChange={(value) => setBasePlanId(value ?? '')}>
-                        <SelectTrigger id="invite-base-plan" className="w-full" aria-label="Membership">
-                            {/* Base UI shows the raw id without a render-prop. */}
-                            <SelectValue>
-                                {(value: string) => (value ? planName(value) : 'Select a membership')}
-                            </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                            {basePlans.map((plan) => (
-                                <SelectItem key={plan.id} value={plan.id}>
-                                    {plan.name}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </Field>
-                <Field id="invite-base-payment" label="Membership payment">
-                    <Select
-                        value={basePaymentStatus}
-                        onValueChange={(value) => setBasePaymentStatus(value as MembershipPaymentStatus)}
-                    >
-                        <SelectTrigger id="invite-base-payment" className="w-full" aria-label="Membership payment">
-                            <SelectValue>
-                                {(value: MembershipPaymentStatus) => membershipPaymentStatusLabel(value)}
-                            </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                            {PAYMENT_OPTIONS.map((status) => (
-                                <SelectItem key={status} value={status}>
-                                    {membershipPaymentStatusLabel(status)}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </Field>
-                <Field id="invite-addon" label="Add-on" optional>
-                    <Select
-                        value={addonPlanId || 'none'}
-                        onValueChange={(value) => setAddonPlanId(!value || value === 'none' ? '' : value)}
-                        disabled={addonPlans.length === 0}
-                    >
-                        <SelectTrigger id="invite-addon" className="w-full" aria-label="Add-on">
-                            <SelectValue>
-                                {(value: string) => (value === 'none' ? 'None' : planName(value))}
-                            </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="none">None</SelectItem>
-                            {addonPlans.map((plan) => (
-                                <SelectItem key={plan.id} value={plan.id}>
-                                    {plan.name}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </Field>
-                {addonPlanId ? (
-                    <Field id="invite-addon-payment" label="Add-on payment">
-                        <Select
-                            value={addonPaymentStatus}
-                            onValueChange={(value) => setAddonPaymentStatus(value as MembershipPaymentStatus)}
-                        >
-                            <SelectTrigger id="invite-addon-payment" className="w-full" aria-label="Add-on payment">
-                                <SelectValue>
-                                    {(value: MembershipPaymentStatus) => membershipPaymentStatusLabel(value)}
-                                </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                                {PAYMENT_OPTIONS.map((status) => (
-                                    <SelectItem key={status} value={status}>
-                                        {membershipPaymentStatusLabel(status)}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </Field>
-                ) : null}
+                <InvitePlanFields
+                    basePlans={basePlans}
+                    addonPlans={addonPlans}
+                    idPrefix="invite"
+                    basePlanId={basePlanId}
+                    onBasePlanChange={setBasePlanId}
+                    basePaymentStatus={basePaymentStatus}
+                    onBasePaymentChange={setBasePaymentStatus}
+                    addonPlanId={addonPlanId}
+                    onAddonPlanChange={setAddonPlanId}
+                    addonPaymentStatus={addonPaymentStatus}
+                    onAddonPaymentChange={setAddonPaymentStatus}
+                />
             </div>
 
             {error ? (

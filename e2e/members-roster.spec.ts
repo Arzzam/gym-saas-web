@@ -120,4 +120,37 @@ test.describe('Members desk', () => {
         await confirmDialog.confirm('Offboard');
         await expect(membersPage.memberRow('Deepa Rao')).toHaveCount(0);
     });
+
+    /**
+     * The invite form had no spec at all — the POM carried a trigger nothing
+     * clicked. It is the first consumer of the shared `InvitePlanFields`, so
+     * this is what proves the plan and payment selects still work.
+     */
+    test('inviting a member picks a plan and its payment, and lands in the invites queue', async ({
+        staffAdmin,
+        membersPage,
+    }) => {
+        // This spec's own invitee — workers share the fixture store.
+        const name = 'E2E Invite Form';
+        await staffAdmin.moduleLink('Members').click();
+
+        await membersPage.inviteMember({
+            name,
+            email: 'e2e-invite-form@example.com',
+            plan: 'Monthly',
+            payment: 'Paid',
+            addon: 'PT Coaching',
+        });
+
+        await membersPage.scope('Invites').click();
+        await expect(membersPage.inviteRow(name)).toBeVisible();
+
+        // The rail is where the picked plan lines land, so it is the only place
+        // a wrong plan or a dropped payment status would show.
+        await membersPage.select(name);
+        await expect(membersPage.rail).toContainText('e2e-invite-form@example.com');
+        await expect(membersPage.rail).toContainText('Monthly');
+        await expect(membersPage.rail).toContainText('PT Coaching');
+        await expect(membersPage.rail.getByText('Paid', { exact: true }).first()).toBeVisible();
+    });
 });
